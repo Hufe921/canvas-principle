@@ -33,6 +33,7 @@ export default class Text {
   private interval: number | null
   private timeout: number | null
   private inputarea: HTMLTextAreaElement
+  private isCompositing: boolean
 
   constructor(canvas: HTMLCanvasElement) {
     const ctx = canvas.getContext('2d')
@@ -49,13 +50,19 @@ export default class Text {
     this.imgData = null
     this.interval = null
     this.timeout = null
+    this.isCompositing = false
 
     const textarea = document.createElement('textarea')
     textarea.autocomplete = 'off'
     textarea.classList.add('inputarea')
+    textarea.innerText = ''
     this.inputarea = textarea
-    textarea.onkeydown = (evt: KeyboardEvent) => this.handKeydown(evt)
-    textarea.oninput = (evt: Event) => this.handInput(evt as InputEvent)
+    textarea.onkeydown = (evt: KeyboardEvent) => this.handleKeydown(evt)
+    textarea.oninput = (evt: Event) => {
+      setTimeout(() => this.handleInput(evt as InputEvent))
+    }
+    textarea.addEventListener('compositionstart', this.handleCompositionstart.bind(this))
+    textarea.addEventListener('compositionend', this.handleCompositionend.bind(this))
     document.body.append(textarea)
 
     canvas.addEventListener('click', this.handleClick.bind(this))
@@ -117,7 +124,7 @@ export default class Text {
     }
   }
 
-  handKeydown(evt: KeyboardEvent) {
+  handleKeydown(evt: KeyboardEvent) {
     if (!this.cursorPosition || !this.textProp) return
     if (evt.key === KeyMap.Backspace) {
       const { i } = this.cursorPosition
@@ -126,7 +133,6 @@ export default class Text {
       this.attr({
         text: arrText.join('')
       })
-      // 恢复初始状态后重绘
       this.imgData = null
       this.recoveryDrawCursor()
       this.draw()
@@ -135,20 +141,35 @@ export default class Text {
     }
   }
 
-  handInput(evt: InputEvent) {
-    if (!evt.data || !this.cursorPosition || !this.textProp) return
+  handleInput(evt: InputEvent) {
+    if (
+      !evt.data ||
+      !this.cursorPosition ||
+      !this.textProp ||
+      this.isCompositing
+    ) {
+      return
+    }
+    this.inputarea.value = ''
     const { i } = this.cursorPosition
     const { arrText } = this.textProp
     arrText.splice(i + 1, 0, evt.data).join('')
     this.attr({
       text: arrText.join('')
     })
-    // 恢复初始状态后重绘
     this.imgData = null
     this.recoveryDrawCursor()
     this.draw()
-    this.cursorPosition = this.position[i + 1] || null
+    this.cursorPosition = this.position[i + evt.data.length] || null
     this.initDrawCursor()
+  }
+
+  handleCompositionstart() {
+    this.isCompositing = true
+  }
+
+  handleCompositionend() {
+    this.isCompositing = false
   }
 
   initDrawCursor() {
