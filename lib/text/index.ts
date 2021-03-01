@@ -55,6 +55,7 @@ export default class Text {
     textarea.classList.add('inputarea')
     this.inputarea = textarea
     textarea.onkeydown = (evt: KeyboardEvent) => this.handKeydown(evt)
+    textarea.oninput = (evt: Event) => this.handInput(evt as InputEvent)
     document.body.append(textarea)
 
     canvas.addEventListener('click', this.handleClick.bind(this))
@@ -132,6 +133,22 @@ export default class Text {
       this.cursorPosition = this.position[i - 1] || null
       this.initDrawCursor()
     }
+  }
+
+  handInput(evt: InputEvent) {
+    if (!evt.data || !this.cursorPosition || !this.textProp) return
+    const { i } = this.cursorPosition
+    const { arrText } = this.textProp
+    arrText.splice(i + 1, 0, evt.data).join('')
+    this.attr({
+      text: arrText.join('')
+    })
+    // 恢复初始状态后重绘
+    this.imgData = null
+    this.recoveryDrawCursor()
+    this.draw()
+    this.cursorPosition = this.position[i + 1] || null
+    this.initDrawCursor()
   }
 
   initDrawCursor() {
