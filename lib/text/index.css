@@ -1,0 +1,18 @@
+.inputarea {
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  left: 0;
+  right: 0;
+  letter-spacing: 0;
+  position: fixed;
+  outline: none;
+  resize: none;
+  border: none;
+  overflow: hidden;
+  color: transparent;
+  background-color: transparent;
+}

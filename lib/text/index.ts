@@ -20,16 +20,19 @@ interface IPosition {
     rightBottom: number[];
   }
 }
-
+import './index.css'
+import { KeyMap } from './keymap'
 export default class Text {
 
   private canvas: HTMLCanvasElement
   private ctx: CanvasRenderingContext2D
   private textProp: ITextProp | null
   private position: IPosition[]
-  private cursorPosition: [number, number] | null
+  private cursorPosition: IPosition | null
   private imgData: ImageData | null
   private interval: number | null
+  private timeout: number | null
+  private inputarea: HTMLTextAreaElement
 
   constructor(canvas: HTMLCanvasElement) {
     const ctx = canvas.getContext('2d')
@@ -45,32 +48,16 @@ export default class Text {
     this.cursorPosition = null
     this.imgData = null
     this.interval = null
+    this.timeout = null
+
+    const textarea = document.createElement('textarea')
+    textarea.autocomplete = 'off'
+    textarea.classList.add('inputarea')
+    this.inputarea = textarea
+    textarea.onkeydown = (evt: KeyboardEvent) => this.handKeydown(evt)
+    document.body.append(textarea)
 
     canvas.addEventListener('click', this.handleClick.bind(this))
-  }
-
-  handleClick(evt: MouseEvent) {
-    if (!this.textProp) return
-    const x = evt.offsetX
-    const y = evt.offsetY
-    // 判断位置
-    for (let j = 0; j < this.position.length; j++) {
-      const { coordinate: { leftTop, rightTop, leftBottom } } = this.position[j];
-      if (leftTop[0] <= x && rightTop[0] >= x && leftTop[1] <= y && leftBottom[1] >= y) {
-        this.cursorPosition = [rightTop[0], rightTop[1]]
-        if (this.interval) {
-          clearInterval(this.interval)
-        }
-        // 清除旧光标位置
-        this.clearCursor()
-        // 缓存状态
-        this.imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height)
-        this.drawCurosr()
-        this.interval = setInterval(() => {
-          this.drawCurosr()
-        }, 1000)
-      }
-    }
   }
 
   attr(props: ITextAttr) {
@@ -115,18 +102,78 @@ export default class Text {
     this.ctx.restore()
   }
 
+  handleClick(evt: MouseEvent) {
+    if (!this.textProp) return
+    const x = evt.offsetX
+    const y = evt.offsetY
+    for (let j = 0; j < this.position.length; j++) {
+      const { coordinate: { leftTop, rightTop, leftBottom } } = this.position[j];
+      if (leftTop[0] <= x && rightTop[0] >= x && leftTop[1] <= y && leftBottom[1] >= y) {
+        this.cursorPosition = this.position[j]
+        this.recoveryDrawCursor()
+        this.initDrawCursor()
+      }
+    }
+  }
+
+  handKeydown(evt: KeyboardEvent) {
+    if (!this.cursorPosition || !this.textProp) return
+    if (evt.key === KeyMap.Backspace) {
+      const { i } = this.cursorPosition
+      const { arrText } = this.textProp
+      arrText.splice(i, 1).join('')
+      this.attr({
+        text: arrText.join('')
+      })
+      // 恢复初始状态后重绘
+      this.imgData = null
+      this.recoveryDrawCursor()
+      this.draw()
+      this.cursorPosition = this.position[i - 1] || null
+      this.initDrawCursor()
+    }
+  }
+
+  initDrawCursor() {
+    if (!this.cursorPosition) return
+    // 缓存canvas状态
+    this.imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height)
+    this.strokeCurosr()
+    this.interval = setInterval(() => this.strokeCurosr(), 1000)
+    // 设置光标代理
+    this.inputarea.focus()
+    this.inputarea.setSelectionRange(0, 0)
+    const { coordinate: { rightTop: [x, y] } } = this.cursorPosition
+    const { left, top } = this.canvas.getBoundingClientRect()
+    this.inputarea.style.left = `${x + left}px`
+    this.inputarea.style.top = `${y + top}px`
+  }
+
+  recoveryDrawCursor() {
+    if (this.interval) {
+      clearInterval(this.interval)
+    }
+    if (this.timeout) {
+      clearTimeout(this.timeout)
+    }
+    this.clearCursor()
+  }
+
   clearCursor() {
     if (this.imgData) {
       this.ctx.putImageData(this.imgData, 0, 0)
     }
   }
 
-  drawCurosr() {
+  strokeCurosr() {
     if (this.cursorPosition) {
-      const [x, y] = this.cursorPosition
+      const { coordinate: { rightTop: [x, y] } } = this.cursorPosition
       this.ctx.fillRect(x, y, 1, 20)
     }
-    setTimeout(() => {
+    if (this.timeout) {
+      clearTimeout(this.timeout)
+    }
+    this.timeout = setTimeout(() => {
       this.clearCursor()
     }, 500)
   }
