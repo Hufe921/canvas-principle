@@ -40,6 +40,7 @@ export default class Text {
     const dpr = window.devicePixelRatio;
     canvas.width = parseInt(canvas.style.width) * dpr;
     canvas.height = parseInt(canvas.style.height) * dpr;
+    canvas.style.cursor = 'text'
     this.canvas = canvas
     // @ts-ignore
     this.ctx = ctx
@@ -126,14 +127,23 @@ export default class Text {
     if (!this.textProp) return
     const x = evt.offsetX
     const y = evt.offsetY
+    let isTextArea = false
     for (let j = 0; j < this.position.length; j++) {
       const { coordinate: { leftTop, rightTop, leftBottom } } = this.position[j];
+      // 命中文本
       if (leftTop[0] <= x && rightTop[0] >= x && leftTop[1] <= y && leftBottom[1] >= y) {
         this.cursorPosition = this.position[j]
-        this.recoveryDrawCursor()
-        this.initDrawCursor()
+        isTextArea = true
+        break
       }
     }
+    // 非命中区域
+    if (!isTextArea) {
+      this.cursorPosition = this.position[this.position.length - 1]
+    }
+    // 绘制光标
+    this.recoveryDrawCursor()
+    this.initDrawCursor()
   }
 
   handleKeydown(evt: KeyboardEvent) {
