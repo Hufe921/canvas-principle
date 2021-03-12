@@ -81,30 +81,42 @@ export default class Text {
     if (!this.textProp) return
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
     let x = 0
+    let y = 0
     this.position = []
     const { arrText, font, textBaseline } = this.textProp
     // 绘制文本
     this.ctx.save()
     this.ctx.font = font
     this.ctx.textBaseline = textBaseline
+    // 记录当前行
+    let lineStr = ''
     for (let i = 0; i < arrText.length; i++) {
+      // 字符基本信息
       const word = arrText[i];
       const metrics = this.ctx.measureText(word)
-      const h = metrics.fontBoundingBoxDescent
+      const height = metrics.actualBoundingBoxDescent
       const width = metrics.width
+      // 计算宽度是否超出画布
+      const curLineWidth = this.ctx.measureText(lineStr).width
+      const canvasWidth = this.canvas.getBoundingClientRect().width
+      if (curLineWidth + width > canvasWidth) {
+        x = 0
+        y += height
+        lineStr = word
+      } else {
+        lineStr += word
+      }
       const positionItem = {
         i,
         coordinate: {
-          leftTop: [x, 0],
-          leftBottom: [x, h],
-          rightTop: [x + width, 0],
-          rightBottom: [x + width, h]
+          leftTop: [x, y],
+          leftBottom: [x, y + height],
+          rightTop: [x + width, y],
+          rightBottom: [x + width, y + height]
         }
       }
       this.position.push(positionItem)
-      // 绘制矩形辅助框
-      // ctx.strokeRect(x, 0, width, h)
-      this.ctx.fillText(word, x, 0)
+      this.ctx.fillText(word, x, y)
       x += width
     }
     this.ctx.restore()

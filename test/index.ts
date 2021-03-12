@@ -60,7 +60,7 @@ function startTextInputDemo() {
   if (!canvas) return
   const text = new Text(canvas as HTMLCanvasElement)
   text.attr({
-    text: 'hufe123这是一段话'
+    text: 'hufe123这是一段话123456789012345678901234567890'
   })
   text.draw()
 }
