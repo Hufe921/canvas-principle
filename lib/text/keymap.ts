@@ -1,3 +1,4 @@
 export enum KeyMap {
-  Backspace = 'Backspace'
+  Backspace = 'Backspace',
+  Enter = "Enter"
 }

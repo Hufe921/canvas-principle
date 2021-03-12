@@ -72,7 +72,7 @@ export default class Text {
 
   attr(props: ITextAttr) {
     const isZeroStart = new RegExp(`^${ZERO}`).test(props.text)
-    const text = (!isZeroStart ? ZERO : '') + props.text
+    const text = (!isZeroStart ? ZERO : '') + props.text.replace(/\n/g, ZERO)
     this.textProp = {
       text,
       font: props.font || '20px yahei',
@@ -103,7 +103,7 @@ export default class Text {
       // 计算宽度是否超出画布
       const curLineWidth = this.ctx.measureText(lineStr).width
       const canvasWidth = this.canvas.getBoundingClientRect().width
-      if (curLineWidth + width > canvasWidth) {
+      if (curLineWidth + width > canvasWidth || (i !== 0 && word === ZERO)) {
         x = 0
         y += height
         lineStr = word
@@ -151,11 +151,11 @@ export default class Text {
 
   handleKeydown(evt: KeyboardEvent) {
     if (!this.cursorPosition || !this.textProp) return
+    const { i } = this.cursorPosition
+    const { arrText } = this.textProp
     if (evt.key === KeyMap.Backspace) {
-      const { i } = this.cursorPosition
-      const { arrText } = this.textProp
       // 判断是否允许删除
-      if (arrText[i] === ZERO) {
+      if (arrText[i] === ZERO && i === 0) {
         evt.preventDefault()
         return
       }
@@ -167,6 +167,16 @@ export default class Text {
       this.recoveryDrawCursor()
       this.draw()
       this.cursorPosition = this.position[i - 1] || null
+      this.initDrawCursor()
+    } else if (evt.key === KeyMap.Enter) {
+      arrText.splice(i + 1, 0, ZERO)
+      this.attr({
+        text: arrText.join('')
+      })
+      this.imgData = null
+      this.recoveryDrawCursor()
+      this.draw()
+      this.cursorPosition = this.position[i + 1]
       this.initDrawCursor()
     }
   }
