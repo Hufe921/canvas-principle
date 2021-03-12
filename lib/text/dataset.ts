@@ -1,0 +1,1 @@
+export const ZERO = '\u200B'

@@ -21,6 +21,7 @@ interface IPosition {
   }
 }
 import './index.css'
+import { ZERO } from './dataset'
 import { KeyMap } from './keymap'
 export default class Text {
 
@@ -70,11 +71,13 @@ export default class Text {
   }
 
   attr(props: ITextAttr) {
+    const isZeroStart = new RegExp(`^${ZERO}`).test(props.text)
+    const text = (!isZeroStart ? ZERO : '') + props.text
     this.textProp = {
-      text: props.text,
+      text,
       font: props.font || '20px yahei',
       textBaseline: props.textBaseline || 'hanging',
-      arrText: props.text.split('')
+      arrText: text.split('')
     }
   }
 
@@ -151,7 +154,12 @@ export default class Text {
     if (evt.key === KeyMap.Backspace) {
       const { i } = this.cursorPosition
       const { arrText } = this.textProp
-      arrText.splice(i, 1).join('')
+      // 判断是否允许删除
+      if (arrText[i] === ZERO) {
+        evt.preventDefault()
+        return
+      }
+      arrText.splice(i, 1)
       this.attr({
         text: arrText.join('')
       })
