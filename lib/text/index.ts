@@ -13,6 +13,7 @@ interface ITextProp {
 
 interface IPosition {
   i: number;
+  isLastLetter: boolean,
   coordinate: {
     leftTop: number[];
     leftBottom: number[];
@@ -29,6 +30,7 @@ export default class Text {
   private ctx: CanvasRenderingContext2D
   private textProp: ITextProp | null
   private position: IPosition[]
+
   private cursorPosition: IPosition | null
   private imgData: ImageData | null
   private interval: number | null
@@ -98,7 +100,7 @@ export default class Text {
       // 字符基本信息
       const word = arrText[i];
       const metrics = this.ctx.measureText(word)
-      const height = metrics.actualBoundingBoxDescent
+      const height = metrics.fontBoundingBoxDescent
       const width = metrics.width
       // 计算宽度是否超出画布
       const curLineWidth = this.ctx.measureText(lineStr).width
@@ -112,11 +114,17 @@ export default class Text {
       }
       const positionItem = {
         i,
+        isLastLetter: false,
         coordinate: {
           leftTop: [x, y],
           leftBottom: [x, y + height],
           rightTop: [x + width, y],
           rightBottom: [x + width, y + height]
+        }
+      }
+      if (x === 0 && i !== 0) {
+        if (y !== this.position[i - 1].coordinate.leftTop[1]) {
+          this.position[i - 1].isLastLetter = true
         }
       }
       this.position.push(positionItem)
@@ -128,21 +136,43 @@ export default class Text {
 
   handleClick(evt: MouseEvent) {
     if (!this.textProp) return
+    const { arrText } = this.textProp
     const x = evt.offsetX
     const y = evt.offsetY
     let isTextArea = false
     for (let j = 0; j < this.position.length; j++) {
-      const { coordinate: { leftTop, rightTop, leftBottom } } = this.position[j];
+      const { i, coordinate: { leftTop, rightTop, leftBottom } } = this.position[j];
       // 命中文本
       if (leftTop[0] <= x && rightTop[0] >= x && leftTop[1] <= y && leftBottom[1] >= y) {
-        this.cursorPosition = this.position[j]
+        let index = j
+        // 判断是否文字中间前后
+        if (arrText[i] !== ZERO) {
+          const wordWidth = rightTop[0] - leftTop[0]
+          if (x < leftTop[0] + wordWidth / 2) {
+            index = j - 1
+          }
+        }
+        this.cursorPosition = this.position[index]
         isTextArea = true
         break
       }
     }
     // 非命中区域
     if (!isTextArea) {
-      this.cursorPosition = this.position[this.position.length - 1]
+      let isLastArea = false
+      // 判断所属行是否存在文本
+      const firstLetterList = this.position.filter(p => p.isLastLetter)
+      for (let j = 0; j < firstLetterList.length; j++) {
+        const { i, coordinate: { leftTop, leftBottom } } = firstLetterList[j]
+        if (y > leftTop[1] && y <= leftBottom[1]) {
+          this.cursorPosition = this.position[i]
+          isLastArea = true
+          break
+        }
+      }
+      if (!isLastArea) {
+        this.cursorPosition = this.position[this.position.length - 1]
+      }
     }
     // 绘制光标
     this.recoveryDrawCursor()
