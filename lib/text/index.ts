@@ -56,6 +56,13 @@ export default class Text {
     this.timeout = null
     this.isCompositing = false
 
+    // 全局事件
+    document.addEventListener('click', (evt) => {
+      if (evt.target === this.canvas) return
+      this.recoveryDrawCursor()
+    })
+
+    // 事件监听转发
     const textarea = document.createElement('textarea')
     textarea.autocomplete = 'off'
     textarea.classList.add('inputarea')
@@ -69,6 +76,7 @@ export default class Text {
     textarea.addEventListener('compositionend', this.handleCompositionend.bind(this))
     document.body.append(textarea)
 
+    // canvas原生事件
     canvas.addEventListener('click', this.handleClick.bind(this))
   }
 
