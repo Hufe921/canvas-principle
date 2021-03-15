@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "start": "parcel index.html"
+    "start": "parcel index.html",
+    "build": "parcel build index.html --public-url /canvas-principle/"
   },
   "dependencies": {
     "@babel/preset-env": "^7.13.5",
