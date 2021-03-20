@@ -1,0 +1,397 @@
+{
+  "permanentTeeth": [
+    {
+      "name": "左上中切牙",
+      "conceptId": "390040002",
+      "display": "1",
+      "quadrant": 1,
+      "seq": 1
+    },
+    {
+      "name": "左下中切牙",
+      "conceptId": "390000024",
+      "display": "1",
+      "quadrant": 4,
+      "seq": 1
+    },
+    {
+      "name": "右上中切牙",
+      "conceptId": "390000016",
+      "display": "1",
+      "quadrant": 2,
+      "seq": 1
+    },
+    {
+      "name": "右下中切牙",
+      "conceptId": "390000032",
+      "display": "1",
+      "quadrant": 3,
+      "seq": 1
+    },
+    {
+      "name": "左上侧切牙",
+      "conceptId": "390040003",
+      "display": "2",
+      "quadrant": 1,
+      "seq": 2
+    },
+    {
+      "name": "左下侧切牙",
+      "conceptId": "390000025",
+      "display": "2",
+      "quadrant": 4,
+      "seq": 2
+    },
+    {
+      "name": "右上侧切牙",
+      "conceptId": "390000017",
+      "display": "2",
+      "quadrant": 2,
+      "seq": 2
+    },
+    {
+      "name": "右下侧切牙",
+      "conceptId": "390000033",
+      "display": "2",
+      "quadrant": 3,
+      "seq": 2
+    },
+    {
+      "name": "左上尖牙",
+      "conceptId": "390040004",
+      "display": "3",
+      "quadrant": 1,
+      "seq": 3
+    },
+    {
+      "name": "左下尖牙",
+      "conceptId": "390000026",
+      "display": "3",
+      "quadrant": 4,
+      "seq": 3
+    },
+    {
+      "name": "右上尖牙",
+      "conceptId": "390000018",
+      "display": "3",
+      "quadrant": 2,
+      "seq": 3
+    },
+    {
+      "name": "右下尖牙",
+      "conceptId": "390000034",
+      "display": "3",
+      "quadrant": 3,
+      "seq": 3
+    },
+    {
+      "name": "左上第一前磨牙",
+      "conceptId": "399282132",
+      "display": "4",
+      "quadrant": 1,
+      "seq": 4
+    },
+    {
+      "name": "左下第一前磨牙",
+      "conceptId": "399282134",
+      "display": "4",
+      "quadrant": 4,
+      "seq": 4
+    },
+    {
+      "name": "右上第一前磨牙",
+      "conceptId": "399282136",
+      "display": "4",
+      "quadrant": 2,
+      "seq": 4
+    },
+    {
+      "name": "右下第一前磨牙",
+      "conceptId": "399282138",
+      "display": "4",
+      "quadrant": 3,
+      "seq": 4
+    },
+    {
+      "name": "左上第二前磨牙",
+      "conceptId": "399282133",
+      "display": "5",
+      "quadrant": 1,
+      "seq": 5
+    },
+    {
+      "name": "左下第二前磨牙",
+      "conceptId": "399282135",
+      "display": "5",
+      "quadrant": 4,
+      "seq": 5
+    },
+    {
+      "name": "右上第二前磨牙",
+      "conceptId": "399282137",
+      "display": "5",
+      "quadrant": 2,
+      "seq": 5
+    },
+    {
+      "name": "右下第二前磨牙",
+      "conceptId": "399282139",
+      "display": "5",
+      "quadrant": 3,
+      "seq": 5
+    },
+    {
+      "name": "左上第一磨牙",
+      "conceptId": "390040028",
+      "display": "6",
+      "quadrant": 1,
+      "seq": 6
+    },
+    {
+      "name": "左下第一磨牙",
+      "conceptId": "390000029",
+      "display": "6",
+      "quadrant": 4,
+      "seq": 6
+    },
+    {
+      "name": "右上第一磨牙",
+      "conceptId": "390000021",
+      "display": "6",
+      "quadrant": 2,
+      "seq": 6
+    },
+    {
+      "name": "右下第一磨牙",
+      "conceptId": "390000037",
+      "display": "6",
+      "quadrant": 3,
+      "seq": 6
+    },
+    {
+      "name": "左上第二磨牙",
+      "conceptId": "390040029",
+      "display": "7",
+      "quadrant": 1,
+      "seq": 7
+    },
+    {
+      "name": "左下第二磨牙",
+      "conceptId": "390000030",
+      "display": "7",
+      "quadrant": 4,
+      "seq": 7
+    },
+    {
+      "name": "右上第二磨牙",
+      "conceptId": "390000022",
+      "display": "7",
+      "quadrant": 2,
+      "seq": 7
+    },
+    {
+      "name": "右下第二磨牙",
+      "conceptId": "390000038",
+      "display": "7",
+      "quadrant": 3,
+      "seq": 7
+    },
+    {
+      "name": "左上第三磨牙",
+      "conceptId": "390000015",
+      "display": "8",
+      "quadrant": 1,
+      "seq": 8
+    },
+    {
+      "name": "左下第三磨牙",
+      "conceptId": "390000031",
+      "display": "8",
+      "quadrant": 4,
+      "seq": 8
+    },
+    {
+      "name": "右上第三磨牙",
+      "conceptId": "390000023",
+      "display": "8",
+      "quadrant": 2,
+      "seq": 8
+    },
+    {
+      "name": "右下第三磨牙",
+      "conceptId": "390000039",
+      "display": "8",
+      "quadrant": 3,
+      "seq": 8
+    }
+  ],
+  "deciduousTeeth": [
+    {
+      "name": "左上乳中切牙",
+      "conceptId": "399282140",
+      "display": "Ⅰ",
+      "quadrant": 1,
+      "seq": 1
+    },
+    {
+      "name": "左下乳中切牙",
+      "conceptId": "399282145",
+      "display": "Ⅰ",
+      "quadrant": 4,
+      "seq": 1
+    },
+    {
+      "name": "右上乳中切牙",
+      "conceptId": "399282150",
+      "display": "Ⅰ",
+      "quadrant": 2,
+      "seq": 1
+    },
+    {
+      "name": "右下乳中切牙",
+      "conceptId": "399282155",
+      "display": "Ⅰ",
+      "quadrant": 3,
+      "seq": 1
+    },
+    {
+      "name": "左上乳侧切牙",
+      "conceptId": "399282141",
+      "display": "Ⅱ",
+      "quadrant": 1,
+      "seq": 2
+    },
+    {
+      "name": "左下乳侧切牙",
+      "conceptId": "399282146",
+      "display": "Ⅱ",
+      "quadrant": 4,
+      "seq": 2
+    },
+    {
+      "name": "右上乳侧切牙",
+      "conceptId": "399282151",
+      "display": "Ⅱ",
+      "quadrant": 2,
+      "seq": 2
+    },
+    {
+      "name": "右下乳侧切牙",
+      "conceptId": "399282156",
+      "display": "Ⅱ",
+      "quadrant": 3,
+      "seq": 2
+    },
+    {
+      "name": "左上乳尖牙",
+      "conceptId": "399282142",
+      "display": "Ⅲ",
+      "quadrant": 1,
+      "seq": 3
+    },
+    {
+      "name": "左下乳尖牙",
+      "conceptId": "399282147",
+      "display": "Ⅲ",
+      "quadrant": 4,
+      "seq": 3
+    },
+    {
+      "name": "右上乳尖牙",
+      "conceptId": "399282152",
+      "display": "Ⅲ",
+      "quadrant": 2,
+      "seq": 3
+    },
+    {
+      "name": "右下乳尖牙",
+      "conceptId": "399282157",
+      "display": "Ⅲ",
+      "quadrant": 3,
+      "seq": 3
+    },
+    {
+      "name": "左上乳第一磨牙",
+      "conceptId": "399282143",
+      "display": "Ⅳ",
+      "quadrant": 1,
+      "seq": 4
+    },
+    {
+      "name": "左下乳第一磨牙",
+      "conceptId": "399282148",
+      "display": "Ⅳ",
+      "quadrant": 4,
+      "seq": 4
+    },
+    {
+      "name": "右上乳第一磨牙",
+      "conceptId": "399282153",
+      "display": "Ⅳ",
+      "quadrant": 2,
+      "seq": 4
+    },
+    {
+      "name": "右下乳第一磨牙",
+      "conceptId": "399282158",
+      "display": "Ⅳ",
+      "quadrant": 3,
+      "seq": 4
+    },
+    {
+      "name": "左上乳第二磨牙",
+      "conceptId": "399282144",
+      "display": "Ⅴ",
+      "quadrant": 1,
+      "seq": 5
+    },
+    {
+      "name": "左下乳第二磨牙",
+      "conceptId": "399282149",
+      "display": "Ⅴ",
+      "quadrant": 4,
+      "seq": 5
+    },
+    {
+      "name": "右上乳第二磨牙",
+      "conceptId": "399282154",
+      "display": "Ⅴ",
+      "quadrant": 2,
+      "seq": 5
+    },
+    {
+      "name": "右下乳第二磨牙",
+      "conceptId": "399282159",
+      "display": "Ⅴ",
+      "quadrant": 3,
+      "seq": 5
+    }
+  ],
+  "teethSurface": [
+    {
+      "name": "咬合面",
+      "valueId": "399282916",
+      "display": "O"
+    },
+    {
+      "name": "近中面",
+      "valueId": "399282914",
+      "display": "M"
+    },
+    {
+      "name": "远中面",
+      "valueId": "399282915",
+      "display": "D"
+    },
+    {
+      "name": "颊面",
+      "valueId": "399282917",
+      "display": "B"
+    },
+    {
+      "name": "舌（腭）面",
+      "valueId": "399282918",
+      "display": "L"
+    }
+  ]
+}
