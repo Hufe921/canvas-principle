@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react'
-import { startEventDemo, startTextInputDemo } from '../test'
+import { startTextInputDemo } from '../test'
 export default function Index() {
 
   useEffect(() => {
     // 事件demo
-    startEventDemo()
+    // startEventDemo()
 
     // 文本输入demo
     startTextInputDemo()

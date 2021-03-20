@@ -21,6 +21,12 @@ interface IPosition {
     rightBottom: number[];
   }
 }
+
+interface IRange {
+  startIndex: number;
+  endIndex: number
+}
+
 import './index.css'
 import { ZERO } from './dataset'
 import { KeyMap } from './keymap'
@@ -30,6 +36,7 @@ export default class Text {
   private ctx: CanvasRenderingContext2D
   private textProp: ITextProp | null
   private position: IPosition[]
+  private range: IRange | null
 
   private cursorPosition: IPosition | null
   private imgData: ImageData | null
@@ -37,6 +44,7 @@ export default class Text {
   private timeout: number | null
   private inputarea: HTMLTextAreaElement
   private isCompositing: boolean
+  private isAllowDrag: boolean
 
   constructor(canvas: HTMLCanvasElement) {
     const ctx = canvas.getContext('2d')
@@ -55,6 +63,8 @@ export default class Text {
     this.interval = null
     this.timeout = null
     this.isCompositing = false
+    this.isAllowDrag = false
+    this.range = null
 
     // 全局事件
     document.addEventListener('click', (evt) => {
@@ -78,6 +88,11 @@ export default class Text {
 
     // canvas原生事件
     canvas.addEventListener('click', this.handleClick.bind(this))
+    canvas.addEventListener('mousedown', this.handleMousedown.bind(this))
+    canvas.addEventListener('mouseleave', this.handleMouseleave.bind(this))
+    canvas.addEventListener('mouseup', this.handleMouseup.bind(this))
+    canvas.addEventListener('mousemove', this.handleMousemove.bind(this))
+
   }
 
   attr(props: ITextAttr) {
@@ -140,6 +155,22 @@ export default class Text {
       x += width
     }
     this.ctx.restore()
+  }
+
+  handleMousedown() {
+    this.isAllowDrag = true
+  }
+
+  handleMouseleave() {
+    this.isAllowDrag = false
+  }
+
+  handleMouseup() {
+    this.isAllowDrag = false
+  }
+
+  handleMousemove() {
+    if (!this.isAllowDrag) return
   }
 
   handleClick(evt: MouseEvent) {
@@ -248,6 +279,24 @@ export default class Text {
 
   handleCompositionend() {
     this.isCompositing = false
+  }
+
+  initDrawRange() {
+    const range = this.range
+    if (!range) return
+    // 选区位置
+    const { coordinate: start } = this.position[range.startIndex]
+    const { coordinate: end } = this.position[range.endIndex]
+    const x = start.leftTop[0]
+    const y = start.leftTop[1]
+    const width = end.rightTop[0] - start.leftTop[0]
+    const height = end.rightBottom[1] - end.rightTop[1]
+    // 绘制
+    this.ctx.save()
+    this.ctx.globalAlpha = 0.6
+    this.ctx.fillStyle = '#AECBFA'
+    this.ctx.fillRect(x, y, width, height)
+    this.ctx.restore()
   }
 
   initDrawCursor() {
