@@ -80,8 +80,10 @@ export default class Text {
     this.inputarea = textarea
     textarea.onkeydown = (evt: KeyboardEvent) => this.handleKeydown(evt)
     textarea.oninput = (evt: Event) => {
-      setTimeout(() => this.handleInput(evt as InputEvent))
+      const data = (evt as InputEvent).data
+      setTimeout(() => this.handleInput(data || ''))
     }
+    textarea.onpaste = (evt: ClipboardEvent) => this.handlePaste(evt)
     textarea.addEventListener('compositionstart', this.handleCompositionstart.bind(this))
     textarea.addEventListener('compositionend', this.handleCompositionend.bind(this))
     document.body.append(textarea)
@@ -250,9 +252,9 @@ export default class Text {
     }
   }
 
-  handleInput(evt: InputEvent) {
+  handleInput(data: string) {
     if (
-      !evt.data ||
+      !data ||
       !this.cursorPosition ||
       !this.textProp ||
       this.isCompositing
@@ -262,15 +264,21 @@ export default class Text {
     this.inputarea.value = ''
     const { i } = this.cursorPosition
     const { arrText } = this.textProp
-    arrText.splice(i + 1, 0, evt.data).join('')
+    arrText.splice(i + 1, 0, data).join('')
     this.attr({
       text: arrText.join('')
     })
     this.imgData = null
     this.recoveryDrawCursor()
     this.draw()
-    this.cursorPosition = this.position[i + evt.data.length] || null
+    this.cursorPosition = this.position[i + data.length] || null
     this.initDrawCursor()
+  }
+
+  handlePaste(evt: ClipboardEvent) {
+    const text = evt.clipboardData?.getData('text')
+    this.handleInput(text || '')
+    evt.preventDefault()
   }
 
   handleCompositionstart() {
