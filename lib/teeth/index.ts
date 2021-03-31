@@ -73,7 +73,6 @@ export default class Teeth {
     const p2 = this.quadrant[Position.Second]
     const p3 = this.quadrant[Position.Third]
     const p4 = this.quadrant[Position.Fourth]
-    // 绘制坐标轴
     const w1 = this._getTextWidth(p1)
     const w2 = this._getTextWidth(p2)
     const w3 = this._getTextWidth(p3)
@@ -82,6 +81,15 @@ export default class Teeth {
     const cRightWidth = w2 > w3 ? w2 + this.gap : w3 + this.gap
     const cWidth = cLeftWidth + cRightWidth
     const cHeight = 50
+    // 重新确定尺寸
+    const dpr = window.devicePixelRatio
+    this.canvas.style.width = `${cWidth}px`
+    this.canvas.style.height = `${cHeight}px`
+    this.canvas.width = cWidth * dpr
+    this.canvas.height = cHeight * dpr
+    this.ctx.scale(dpr, dpr)
+    this.ctx.font = '14px yahei'
+    // 绘制坐标轴
     this.ctx.fillRect(0, cHeight / 2, cWidth, 1)
     this.ctx.fillRect(cLeftWidth, 0, 1, cHeight)
     // 绘制元素
