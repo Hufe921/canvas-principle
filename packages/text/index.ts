@@ -245,7 +245,7 @@ export default class Text {
         const probablePosition = evt.key === KeyMap.Up
           ? this.position.slice(0, i).filter(p => p.lineNo === lineNo - 1)
           : this.position.slice(i, this.position.length - 1).filter(p => p.lineNo === lineNo + 1)
-        // 查找与当前光标点交叉最多的点
+        // 查找与当前位置文字点交叉最多的位置
         let maxIndex = 0
         let maxDistance = 0
         for (let p = 0; p < probablePosition.length; p++) {
@@ -267,7 +267,7 @@ export default class Text {
             }
           }
           // 匹配不到
-          else if (p === probablePosition.length - 1 && maxIndex === 0) {
+          if (p === probablePosition.length - 1 && maxIndex === 0) {
             maxIndex = position.i
           }
         }
