@@ -1,0 +1,16 @@
+ul {
+  display: flex;
+  padding: 0;
+}
+
+ul li {
+  list-style: none;
+  margin: 0 10px;
+  cursor: pointer;
+  border-bottom: 2px solid grey;
+}
+
+ul li.active {
+  color: rgb(22, 151, 226);
+  border-bottom: 2px solid rgb(22, 151, 226);
+}

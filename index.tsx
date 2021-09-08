@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import Index from './components/index'
+import Index from './test/index.test'
 
 class App extends Component {
   render() {

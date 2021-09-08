@@ -1,35 +1,7 @@
-interface ITextAttr {
-  text: string;
-  font?: string;
-  textBaseline?: CanvasTextBaseline;
-}
-
-interface ITextProp {
-  text: string;
-  font: string;
-  textBaseline: CanvasTextBaseline;
-  arrText: string[]
-}
-
-interface IPosition {
-  i: number;
-  isLastLetter: boolean,
-  coordinate: {
-    leftTop: number[];
-    leftBottom: number[];
-    rightTop: number[];
-    rightBottom: number[];
-  }
-}
-
-interface IRange {
-  startIndex: number;
-  endIndex: number
-}
-
 import './index.css'
-import { ZERO } from './dataset'
-import { KeyMap } from './keymap'
+import { ITextProp, ITextAttr, IPosition, IRange } from './interface'
+import { ZERO } from './utils/dataset'
+import { KeyMap } from './utils/keymap'
 export default class Text {
 
   private canvas: HTMLCanvasElement
@@ -53,8 +25,7 @@ export default class Text {
     canvas.height = parseInt(canvas.style.height) * dpr;
     canvas.style.cursor = 'text'
     this.canvas = canvas
-    // @ts-ignore
-    this.ctx = ctx
+    this.ctx = ctx as CanvasRenderingContext2D
     this.ctx.scale(dpr, dpr)
     this.textProp = null
     this.position = []
@@ -249,6 +220,18 @@ export default class Text {
       this.draw()
       this.cursorPosition = this.position[i + 1]
       this.initDrawCursor()
+    } else if (evt.key === KeyMap.Left) {
+      if (i > 0) {
+        this.cursorPosition = this.position[i - 1]
+        this.recoveryDrawCursor()
+        this.initDrawCursor()
+      }
+    } else if (evt.key === KeyMap.Right) {
+      if (i < this.position.length - 1) {
+        this.cursorPosition = this.position[i + 1]
+        this.recoveryDrawCursor()
+        this.initDrawCursor()
+      }
     }
   }
 
