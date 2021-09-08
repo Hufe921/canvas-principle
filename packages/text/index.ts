@@ -17,6 +17,7 @@ export default class Text {
   private inputarea: HTMLTextAreaElement
   private isCompositing: boolean
   private isAllowDrag: boolean
+  private lineCount: number
 
   constructor(canvas: HTMLCanvasElement) {
     const ctx = canvas.getContext('2d')
@@ -36,6 +37,7 @@ export default class Text {
     this.isCompositing = false
     this.isAllowDrag = false
     this.range = null
+    this.lineCount = 0
 
     // 全局事件
     document.addEventListener('click', (evt) => {
@@ -92,6 +94,7 @@ export default class Text {
     this.ctx.textBaseline = textBaseline
     // 记录当前行
     let lineStr = ''
+    let lineNo = 0
     for (let i = 0; i < arrText.length; i++) {
       // 字符基本信息
       const word = arrText[i];
@@ -105,11 +108,13 @@ export default class Text {
         x = 0
         y += height
         lineStr = word
+        lineNo += 1
       } else {
         lineStr += word
       }
       const positionItem = {
         i,
+        lineNo,
         isLastLetter: false,
         coordinate: {
           leftTop: [x, y],
@@ -127,6 +132,7 @@ export default class Text {
       this.ctx.fillText(word, x, y)
       x += width
     }
+    this.lineCount = lineNo
     this.ctx.restore()
   }
 
@@ -229,6 +235,43 @@ export default class Text {
     } else if (evt.key === KeyMap.Right) {
       if (i < this.position.length - 1) {
         this.cursorPosition = this.position[i + 1]
+        this.recoveryDrawCursor()
+        this.initDrawCursor()
+      }
+    } else if (evt.key === KeyMap.Up || evt.key === KeyMap.Down) {
+      const { lineNo, i, coordinate: { leftTop, rightTop } } = this.cursorPosition
+      if ((evt.key === KeyMap.Up && lineNo !== 0) || (evt.key === KeyMap.Down && lineNo !== this.lineCount)) {
+        // 下一个光标点所在行位置集合
+        const probablePosition = evt.key === KeyMap.Up
+          ? this.position.slice(0, i).filter(p => p.lineNo === lineNo - 1)
+          : this.position.slice(i, this.position.length - 1).filter(p => p.lineNo === lineNo + 1)
+        // 查找与当前光标点交叉最多的点
+        let maxIndex = 0
+        let maxDistance = 0
+        for (let p = 0; p < probablePosition.length; p++) {
+          const position = probablePosition[p]
+          // 当前光标在前
+          if (position.coordinate.leftTop[0] >= leftTop[0] && position.coordinate.leftTop[0] <= rightTop[0]) {
+            const curDistance = rightTop[0] - position.coordinate.leftTop[0]
+            if (curDistance > maxDistance) {
+              maxIndex = position.i
+              maxDistance = curDistance
+            }
+          }
+          // 当前光标在后
+          else if (position.coordinate.leftTop[0] <= leftTop[0] && position.coordinate.rightTop[0] >= leftTop[0]) {
+            const curDistance = position.coordinate.rightTop[0] - leftTop[0]
+            if (curDistance > maxDistance) {
+              maxIndex = position.i
+              maxDistance = curDistance
+            }
+          }
+          // 匹配不到
+          else if (p === probablePosition.length - 1 && maxIndex === 0) {
+            maxIndex = position.i
+          }
+        }
+        this.cursorPosition = this.position[maxIndex]
         this.recoveryDrawCursor()
         this.initDrawCursor()
       }

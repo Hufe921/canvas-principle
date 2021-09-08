@@ -13,6 +13,7 @@ export interface ITextProp {
 
 export interface IPosition {
   i: number;
+  lineNo: number;
   isLastLetter: boolean,
   coordinate: {
     leftTop: number[];
