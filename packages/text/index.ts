@@ -132,6 +132,15 @@ export default class Text {
       this.ctx.fillText(word, x, y)
       x += width
     }
+    // 最后一个字距离顶部高度
+    const lastPosition = this.position[this.position.length - 1]
+    const { coordinate: { leftBottom, leftTop } } = lastPosition
+    if (leftBottom[1] > this.canvas.height) {
+      const height = Math.ceil(leftBottom[1] + (leftBottom[1] - leftTop[1]))
+      this.canvas.height = height
+      this.canvas.style.height = `${height}px`
+      this.draw()
+    }
     this.lineCount = lineNo
     this.ctx.restore()
   }
