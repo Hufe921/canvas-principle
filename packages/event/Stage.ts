@@ -19,13 +19,10 @@ export default class Stage {
 
     this.canvas = canvas
     this.osCanvas = new OffscreenCanvas(canvas.width, canvas.height);
-    // @ts-ignore
-    this.ctx = this.canvas.getContext('2d')
-    // @ts-ignore
-    this.osCtx = this.osCanvas.getContext('2d');
+    this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
+    this.osCtx = this.osCanvas.getContext('2d') as OffscreenCanvasRenderingContext2D
     this.ctx.scale(dpr, dpr)
     this.osCtx.scale(dpr, dpr);
-
     this.dpr = dpr
 
     this.canvas.addEventListener('mousedown', this.handleCreator(ActionType.Down))
@@ -35,7 +32,6 @@ export default class Stage {
     this.shapeIds = new Set()
     this.shapes = new Set()
     this.eventSimulator = new EventSimulator()
-
   }
 
   add(shape: Shape) {

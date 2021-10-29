@@ -1,9 +1,10 @@
 import Base from "./Base";
 import { idToRgba } from "../utils";
 import { RectAttr, RectProps } from "../types";
+
 export default class Rect extends Base {
 
-  private lastProps: RectProps | null
+  public lastProps: RectProps
 
   constructor(props: RectProps) {
     super()
@@ -21,7 +22,6 @@ export default class Rect extends Base {
       strokeColor: `rgba(${r},${g},${b},${a})`,
       fillColor: `rgba(${r}, ${g}, ${b}, ${a})`
     })
-
   }
 
   attr(props: RectAttr) {

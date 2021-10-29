@@ -2,6 +2,7 @@ import { createId } from '../utils'
 import { Shape, Listener, EventNames, CircleAttr, RectAttr } from '../types'
 
 export default class Base implements Shape {
+
   private listeners: { [eventName: string]: Listener[] }
   public id: string
   public ctx: CanvasRenderingContext2D | null

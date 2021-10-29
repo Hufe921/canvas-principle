@@ -4,7 +4,7 @@ import { CircleAttr, CircleProps } from "../types";
 
 export default class Circle extends Base {
 
-  private lastProps: CircleProps | null
+  public lastProps: CircleProps
 
   constructor(props: CircleProps) {
     super()

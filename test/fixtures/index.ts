@@ -9,7 +9,7 @@ function startEventDemo(canvas: HTMLCanvasElement) {
     x: 50,
     y: 50,
     width: 250,
-    height: 175,
+    height: 180,
     strokeWidth: 1,
     strokeColor: '#000000',
     fillColor: 'green',
@@ -17,8 +17,8 @@ function startEventDemo(canvas: HTMLCanvasElement) {
   stage.add(rect)
 
   const circle = new Circle({
-    x: 200,
-    y: 200,
+    x: 300,
+    y: 300,
     radius: 100,
     strokeWidth: 1,
     strokeColor: '#000000',
@@ -27,8 +27,12 @@ function startEventDemo(canvas: HTMLCanvasElement) {
   stage.add(circle)
 
   let isStart = false
-  rect.on(EventNames.mousedown, () => {
+  let startX = 0
+  let startY = 0
+  rect.on(EventNames.mousedown, (evt) => {
     isStart = true
+    startX = evt.offsetX
+    startY = evt.offsetY
   })
   rect.on(EventNames.mouseup, () => {
     isStart = false
@@ -38,9 +42,14 @@ function startEventDemo(canvas: HTMLCanvasElement) {
   })
   rect.on(EventNames.mousemove, (evt: MouseEvent) => {
     if (isStart) {
+      const { lastProps: { x, y } } = rect
+      const diffX = evt.offsetX - startX
+      const diffY = evt.offsetY - startY
+      startX = evt.offsetX
+      startY = evt.offsetY
       rect.attr({
-        x: evt.offsetX - 125,
-        y: evt.offsetY - 140
+        x: x + diffX,
+        y: y + diffY
       })
     }
   })

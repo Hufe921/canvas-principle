@@ -1,6 +1,7 @@
 import { Listener, EventNames, Action, ActionType } from '../index'
 
 export default class EventSimulator {
+
   private listenersMap: {
     [id: string]: {
       [eventName: string]: Listener[]
