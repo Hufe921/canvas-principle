@@ -1,7 +1,8 @@
 import './index.css'
-import { ITextProp, ITextAttr, IPosition, IRange } from './interface'
 import { ZERO } from './utils/dataset'
 import { KeyMap } from './utils/keymap'
+import { HistoryManager } from './core/HistoryManager'
+import { ITextProp, ITextAttr, IPosition, IRange } from './interface'
 export default class Text {
 
   private canvas: HTMLCanvasElement
@@ -18,6 +19,8 @@ export default class Text {
   private isCompositing: boolean
   private isAllowDrag: boolean
   private lineCount: number
+
+  private historyManager: HistoryManager
 
   constructor(canvas: HTMLCanvasElement) {
     const ctx = canvas.getContext('2d')
@@ -38,6 +41,9 @@ export default class Text {
     this.isAllowDrag = false
     this.range = null
     this.lineCount = 0
+
+    // 历史管理
+    this.historyManager = new HistoryManager()
 
     // 全局事件
     document.addEventListener('click', (evt) => {
@@ -67,7 +73,6 @@ export default class Text {
     canvas.addEventListener('mouseleave', this.handleMouseleave.bind(this))
     canvas.addEventListener('mouseup', this.handleMouseup.bind(this))
     canvas.addEventListener('mousemove', this.handleMousemove.bind(this))
-
   }
 
   attr(props: ITextAttr) {
@@ -81,7 +86,10 @@ export default class Text {
     }
   }
 
-  draw() {
+  draw(curIndex?: number, isSubmitHistory = true) {
+    // 清除光标
+    this.imgData = null
+    this.recoveryDrawCursor()
     if (!this.textProp) return
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
     let x = 0
@@ -132,6 +140,12 @@ export default class Text {
       this.ctx.fillText(word, x, y)
       x += width
     }
+    if (curIndex === undefined) {
+      curIndex = this.position.length - 1
+    }
+    // 光标重绘
+    this.cursorPosition = this.position[curIndex!] || null
+    this.initDrawCursor()
     // 最后一个字距离顶部高度
     const lastPosition = this.position[this.position.length - 1]
     const { coordinate: { leftBottom, leftTop } } = lastPosition
@@ -139,10 +153,21 @@ export default class Text {
       const height = Math.ceil(leftBottom[1] + (leftBottom[1] - leftTop[1]))
       this.canvas.height = height
       this.canvas.style.height = `${height}px`
-      this.draw()
+      this.draw(curIndex, false)
     }
     this.lineCount = lineNo
     this.ctx.restore()
+    // 历史记录-用于undo、redo
+    if (isSubmitHistory) {
+      const self = this
+      const oldText = arrText.join('')
+      this.historyManager.execute(function () {
+        self.attr({
+          text: oldText
+        })
+        self.draw(curIndex, false)
+      })
+    }
   }
 
   handleMousedown() {
@@ -220,21 +245,13 @@ export default class Text {
       this.attr({
         text: arrText.join('')
       })
-      this.imgData = null
-      this.recoveryDrawCursor()
-      this.draw()
-      this.cursorPosition = this.position[i - 1] || null
-      this.initDrawCursor()
+      this.draw(i - 1)
     } else if (evt.key === KeyMap.Enter) {
       arrText.splice(i + 1, 0, ZERO)
       this.attr({
         text: arrText.join('')
       })
-      this.imgData = null
-      this.recoveryDrawCursor()
-      this.draw()
-      this.cursorPosition = this.position[i + 1]
-      this.initDrawCursor()
+      this.draw(i + 1)
     } else if (evt.key === KeyMap.Left) {
       if (i > 0) {
         this.cursorPosition = this.position[i - 1]
@@ -284,6 +301,12 @@ export default class Text {
         this.recoveryDrawCursor()
         this.initDrawCursor()
       }
+    } else if (evt.ctrlKey && evt.key === KeyMap.Z) {
+      this.historyManager.undo()
+      evt.preventDefault()
+    } else if (evt.ctrlKey && evt.key === KeyMap.Y) {
+      this.historyManager.redo()
+      evt.preventDefault()
     }
   }
 
@@ -303,11 +326,7 @@ export default class Text {
     this.attr({
       text: arrText.join('')
     })
-    this.imgData = null
-    this.recoveryDrawCursor()
-    this.draw()
-    this.cursorPosition = this.position[i + data.length] || null
-    this.initDrawCursor()
+    this.draw(i + data.length)
   }
 
   handlePaste(evt: ClipboardEvent) {
@@ -385,4 +404,5 @@ export default class Text {
       this.clearCursor()
     }, 500)
   }
+
 }
