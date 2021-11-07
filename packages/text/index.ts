@@ -134,6 +134,7 @@ export default class Text {
         i,
         lineNo,
         isLastLetter: false,
+        word: arrText[i + 1],
         coordinate: {
           leftTop: [x, y],
           leftBottom: [x, y + height],
@@ -382,6 +383,13 @@ export default class Text {
       evt.preventDefault()
     } else if (evt.ctrlKey && evt.key === KeyMap.Y) {
       this.historyManager.redo()
+      evt.preventDefault()
+    } else if (evt.ctrlKey && evt.key === KeyMap.C) {
+      const { startIndex, endIndex } = this.range
+      if (startIndex !== endIndex) {
+        const text = this.position.slice(startIndex, endIndex).map(p => p.word).join('')
+        window.navigator.clipboard.writeText(text)
+      }
       evt.preventDefault()
     }
   }
