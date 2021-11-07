@@ -68,7 +68,7 @@ export default class Text {
     document.body.append(textarea)
 
     // canvas原生事件
-    canvas.addEventListener('click', this.handleClick.bind(this))
+    canvas.addEventListener('mousedown', this.setCursor.bind(this))
     canvas.addEventListener('mousedown', this.handleMousedown.bind(this))
     canvas.addEventListener('mouseleave', this.handleMouseleave.bind(this))
     canvas.addEventListener('mouseup', this.handleMouseup.bind(this))
@@ -170,23 +170,7 @@ export default class Text {
     }
   }
 
-  handleMousedown() {
-    this.isAllowDrag = true
-  }
-
-  handleMouseleave() {
-    this.isAllowDrag = false
-  }
-
-  handleMouseup() {
-    this.isAllowDrag = false
-  }
-
-  handleMousemove() {
-    if (!this.isAllowDrag) return
-  }
-
-  handleClick(evt: MouseEvent) {
+  setCursor(evt: MouseEvent) {
     if (!this.textProp) return
     const { arrText } = this.textProp
     const x = evt.offsetX
@@ -226,9 +210,89 @@ export default class Text {
         this.cursorPosition = this.position[this.position.length - 1]
       }
     }
-    // 绘制光标
-    this.recoveryDrawCursor()
-    this.initDrawCursor()
+    // 绘制光标-光标无法正确定位
+    setTimeout(() => {
+      this.recoveryDrawCursor()
+      this.initDrawCursor()
+    })
+  }
+
+  initDrawRange() {
+    const range = this.range
+    if (!range) return
+    // 选区位置
+    const { coordinate: start } = this.position[range.startIndex]
+    const { coordinate: end } = this.position[range.endIndex]
+    const x = start.leftTop[0]
+    const y = start.leftTop[1]
+    const width = end.rightTop[0] - start.leftTop[0]
+    const height = end.rightBottom[1] - end.rightTop[1]
+    // 绘制
+    this.ctx.save()
+    this.ctx.globalAlpha = 0.6
+    this.ctx.fillStyle = '#AECBFA'
+    this.ctx.fillRect(x, y, width, height)
+    this.ctx.restore()
+  }
+
+  initDrawCursor() {
+    if (!this.cursorPosition) return
+    // 缓存canvas状态
+    this.imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height)
+    this.strokeCurosr()
+    this.interval = setInterval(() => this.strokeCurosr(), 1000)
+    // 设置光标代理
+    const { coordinate: { rightTop: [x, y] } } = this.cursorPosition
+    this.inputarea.focus()
+    this.inputarea.setSelectionRange(0, 0)
+    const { left, top } = this.canvas.getBoundingClientRect()
+    this.inputarea.style.left = `${x + left}px`
+    this.inputarea.style.top = `${y + top}px`
+  }
+
+  recoveryDrawCursor() {
+    if (this.interval) {
+      clearInterval(this.interval)
+    }
+    if (this.timeout) {
+      clearTimeout(this.timeout)
+    }
+    this.clearCursor()
+  }
+
+  clearCursor() {
+    if (this.imgData) {
+      this.ctx.putImageData(this.imgData, 0, 0)
+    }
+  }
+
+  strokeCurosr() {
+    if (this.cursorPosition) {
+      const { coordinate: { rightTop: [x, y] } } = this.cursorPosition
+      this.ctx.fillRect(x, y, 1, 20)
+    }
+    if (this.timeout) {
+      clearTimeout(this.timeout)
+    }
+    this.timeout = setTimeout(() => {
+      this.clearCursor()
+    }, 500)
+  }
+
+  handleMousemove() {
+    if (!this.isAllowDrag) return
+  }
+
+  handleMousedown() {
+    this.isAllowDrag = true
+  }
+
+  handleMouseleave() {
+    this.isAllowDrag = false
+  }
+
+  handleMouseup() {
+    this.isAllowDrag = false
   }
 
   handleKeydown(evt: KeyboardEvent) {
@@ -341,68 +405,6 @@ export default class Text {
 
   handleCompositionend() {
     this.isCompositing = false
-  }
-
-  initDrawRange() {
-    const range = this.range
-    if (!range) return
-    // 选区位置
-    const { coordinate: start } = this.position[range.startIndex]
-    const { coordinate: end } = this.position[range.endIndex]
-    const x = start.leftTop[0]
-    const y = start.leftTop[1]
-    const width = end.rightTop[0] - start.leftTop[0]
-    const height = end.rightBottom[1] - end.rightTop[1]
-    // 绘制
-    this.ctx.save()
-    this.ctx.globalAlpha = 0.6
-    this.ctx.fillStyle = '#AECBFA'
-    this.ctx.fillRect(x, y, width, height)
-    this.ctx.restore()
-  }
-
-  initDrawCursor() {
-    if (!this.cursorPosition) return
-    // 缓存canvas状态
-    this.imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height)
-    this.strokeCurosr()
-    this.interval = setInterval(() => this.strokeCurosr(), 1000)
-    // 设置光标代理
-    this.inputarea.focus()
-    this.inputarea.setSelectionRange(0, 0)
-    const { coordinate: { rightTop: [x, y] } } = this.cursorPosition
-    const { left, top } = this.canvas.getBoundingClientRect()
-    this.inputarea.style.left = `${x + left}px`
-    this.inputarea.style.top = `${y + top}px`
-  }
-
-  recoveryDrawCursor() {
-    if (this.interval) {
-      clearInterval(this.interval)
-    }
-    if (this.timeout) {
-      clearTimeout(this.timeout)
-    }
-    this.clearCursor()
-  }
-
-  clearCursor() {
-    if (this.imgData) {
-      this.ctx.putImageData(this.imgData, 0, 0)
-    }
-  }
-
-  strokeCurosr() {
-    if (this.cursorPosition) {
-      const { coordinate: { rightTop: [x, y] } } = this.cursorPosition
-      this.ctx.fillRect(x, y, 1, 20)
-    }
-    if (this.timeout) {
-      clearTimeout(this.timeout)
-    }
-    this.timeout = setTimeout(() => {
-      this.clearCursor()
-    }, 500)
   }
 
 }
