@@ -2,7 +2,7 @@ import './index.css'
 import { ZERO } from './utils/dataset'
 import { KeyMap } from './utils/keymap'
 import { HistoryManager } from './core/HistoryManager'
-import { ITextProp, ITextAttr, IPosition, IRange } from './interface'
+import { ITextProp, ITextAttr, IPosition, IRange, IDrawOptions } from './interface'
 export default class Text {
 
   private readonly RANGE_COLOR = '#AECBFA'
@@ -14,13 +14,13 @@ export default class Text {
   private range: IRange
 
   private cursorPosition: IPosition | null
-  private imgData: ImageData | null
-  private interval: number | null
-  private timeout: number | null
+  private cursorDom: HTMLDivElement
+  private textareaDom: HTMLTextAreaElement
   private inputarea: HTMLTextAreaElement
   private isCompositing: boolean
   private isAllowDrag: boolean
   private lineCount: number
+  private mouseDownStartIndex: number
 
   private historyManager: HistoryManager
 
@@ -36,9 +36,6 @@ export default class Text {
     this.textProp = null
     this.position = []
     this.cursorPosition = null
-    this.imgData = null
-    this.interval = null
-    this.timeout = null
     this.isCompositing = false
     this.isAllowDrag = false
     this.range = {
@@ -46,14 +43,16 @@ export default class Text {
       endIndex: 0
     }
     this.lineCount = 0
+    this.mouseDownStartIndex = 0
 
     // 历史管理
     this.historyManager = new HistoryManager()
 
     // 全局事件
     document.addEventListener('click', (evt) => {
-      if (evt.target === this.canvas) return
-      this.recoveryDrawCursor()
+      const innerDoms = [this.canvas, this.cursorDom, this.textareaDom, document.body]
+      if (innerDoms.includes(evt.target as any)) return
+      this.recoveryCursor()
     })
 
     // 事件监听转发
@@ -71,6 +70,12 @@ export default class Text {
     textarea.addEventListener('compositionstart', this.handleCompositionstart.bind(this))
     textarea.addEventListener('compositionend', this.handleCompositionend.bind(this))
     document.body.append(textarea)
+    this.textareaDom = textarea
+
+    // 光标
+    this.cursorDom = document.createElement('div')
+    this.cursorDom.classList.add('cursor')
+    document.body.append(this.cursorDom)
 
     // canvas原生事件
     canvas.addEventListener('mousedown', this.setCursor.bind(this))
@@ -91,10 +96,10 @@ export default class Text {
     }
   }
 
-  draw(curIndex?: number, isSubmitHistory = true) {
+  draw(options: IDrawOptions) {
+    let { curIndex, isSubmitHistory = true, isSetCursor = true } = options || {}
     // 清除光标
-    this.imgData = null
-    this.recoveryDrawCursor()
+    this.recoveryCursor()
     if (!this.textProp) return
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
     let x = 0
@@ -143,14 +148,25 @@ export default class Text {
       }
       this.position.push(positionItem)
       this.ctx.fillText(word, x, y)
+      // 选区绘制
+      const { startIndex, endIndex } = this.range
+      if (startIndex !== endIndex && startIndex < i && i <= endIndex) {
+        this.ctx.save()
+        this.ctx.globalAlpha = 0.6
+        this.ctx.fillStyle = this.RANGE_COLOR
+        this.ctx.fillRect(x, y, width, height)
+        this.ctx.restore()
+      }
       x += width
     }
     if (curIndex === undefined) {
       curIndex = this.position.length - 1
     }
     // 光标重绘
-    this.cursorPosition = this.position[curIndex!] || null
-    this.initDrawCursor()
+    if (isSetCursor) {
+      this.cursorPosition = this.position[curIndex!] || null
+      this.drawCursor()
+    }
     // 最后一个字距离顶部高度
     const lastPosition = this.position[this.position.length - 1]
     const { coordinate: { leftBottom, leftTop } } = lastPosition
@@ -158,7 +174,7 @@ export default class Text {
       const height = Math.ceil(leftBottom[1] + (leftBottom[1] - leftTop[1]))
       this.canvas.height = height
       this.canvas.style.height = `${height}px`
-      this.draw(curIndex, false)
+      this.draw({ curIndex, isSubmitHistory: false })
     }
     this.lineCount = lineNo
     this.ctx.restore()
@@ -170,7 +186,7 @@ export default class Text {
         self.attr({
           text: oldText
         })
-        self.draw(curIndex, false)
+        self.draw({ curIndex, isSubmitHistory: false })
       })
     }
   }
@@ -200,12 +216,13 @@ export default class Text {
     // 非命中区域
     if (!isTextArea) {
       let isLastArea = false
+      let curPostionIndex = -1
       // 判断所属行是否存在文本
       const firstLetterList = this.position.filter(p => p.isLastLetter)
       for (let j = 0; j < firstLetterList.length; j++) {
         const { i, coordinate: { leftTop, leftBottom } } = firstLetterList[j]
         if (y > leftTop[1] && y <= leftBottom[1]) {
-          this.cursorPosition = this.position[i]
+          curPostionIndex = i
           isLastArea = true
           break
         }
@@ -213,6 +230,7 @@ export default class Text {
       if (!isLastArea) {
         return this.position.length - 1
       }
+      return curPostionIndex
     }
     return -1
   }
@@ -220,90 +238,65 @@ export default class Text {
   setCursor(evt: MouseEvent) {
     const positionIndex = this.getCursorPosition(evt)
     if (~positionIndex) {
-      this.cursorPosition = this.position[positionIndex]
-      // 绘制光标-光标无法正确定位
+      this.range.startIndex = 0
+      this.range.endIndex = 0
       setTimeout(() => {
-        this.recoveryDrawCursor()
-        this.initDrawCursor()
+        this.draw({ curIndex: positionIndex, isSubmitHistory: false })
       })
     }
   }
 
-  initDrawCursor() {
+  drawCursor() {
     if (!this.cursorPosition) return
-    // 缓存canvas状态
-    this.imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height)
-    this.strokeCurosr()
-    this.interval = setInterval(() => this.strokeCurosr(), 1000)
     // 设置光标代理
     const { coordinate: { rightTop: [x, y] } } = this.cursorPosition
     this.inputarea.focus()
     this.inputarea.setSelectionRange(0, 0)
     const { left, top } = this.canvas.getBoundingClientRect()
-    this.inputarea.style.left = `${x + left}px`
-    this.inputarea.style.top = `${y + top}px`
+    const curosrleft = `${x + left}px`
+    const cursorTop = `${y + top}px`
+    this.inputarea.style.left = curosrleft
+    this.inputarea.style.top = cursorTop
+    // 模拟光标显示
+    this.cursorDom.style.left = curosrleft
+    this.cursorDom.style.top = cursorTop
+    this.cursorDom.style.display = 'block'
+    setTimeout(() => {
+      this.cursorDom.classList.add('cursor--animation')
+    }, 200)
   }
 
-  recoveryDrawCursor() {
-    if (this.interval) {
-      clearInterval(this.interval)
-    }
-    if (this.timeout) {
-      clearTimeout(this.timeout)
-    }
-    this.clearCursor()
-  }
-
-  clearCursor() {
-    if (this.imgData) {
-      this.ctx.putImageData(this.imgData, 0, 0)
-    }
-  }
-
-  strokeCurosr() {
-    if (this.cursorPosition) {
-      const { coordinate: { rightTop: [x, y] } } = this.cursorPosition
-      this.ctx.fillRect(x, y, 1, 20)
-    }
-    if (this.timeout) {
-      clearTimeout(this.timeout)
-    }
-    this.timeout = setTimeout(() => {
-      this.clearCursor()
-    }, 500)
+  recoveryCursor() {
+    this.cursorDom.style.display = 'none'
+    this.cursorDom.classList.remove('cursor--animation')
   }
 
   strokeRange() {
-    const { startIndex, endIndex } = this.range
-    if (startIndex === endIndex) return
-    const { coordinate: startCoordinate, lineNo: startLineNo } = this.position[startIndex]
-    const { coordinate: endCoordinate, lineNo: endLineNo } = this.position[endIndex]
-    this.ctx.save()
-    this.ctx.globalAlpha = 0.6
-    this.ctx.fillStyle = this.RANGE_COLOR
-    if (startLineNo === endLineNo) {
-      const x = startCoordinate.leftTop[0]
-      const y = startCoordinate.leftTop[1]
-      const w = endCoordinate.rightTop[0] - x
-      const h = startCoordinate.leftBottom[1] - startCoordinate.leftTop[1]
-      this.ctx.fillRect(x, y, w, h)
-    }
-    this.ctx.restore()
+    this.draw({
+      isSubmitHistory: false,
+      isSetCursor: false
+    })
   }
 
   handleMousemove(evt: MouseEvent) {
     if (!this.isAllowDrag) return
     // 结束位置
     const endIndex = this.getCursorPosition(evt)
-    this.range.endIndex = ~endIndex ? endIndex : 0
+    let end = ~endIndex ? endIndex : 0
     // 开始位置
-    this.range.startIndex = this.cursorPosition?.i || 0
+    let start = this.mouseDownStartIndex
+    if (start > end) {
+      [start, end] = [end, start]
+    }
+    this.range.startIndex = start
+    this.range.endIndex = end
     // 绘制选区
     this.strokeRange()
   }
 
-  handleMousedown() {
+  handleMousedown(evt: MouseEvent) {
     this.isAllowDrag = true
+    this.mouseDownStartIndex = this.getCursorPosition(evt) || 0
   }
 
   handleMouseleave() {
@@ -328,24 +321,24 @@ export default class Text {
       this.attr({
         text: arrText.join('')
       })
-      this.draw(i - 1)
+      this.draw({ curIndex: i - 1 })
     } else if (evt.key === KeyMap.Enter) {
       arrText.splice(i + 1, 0, ZERO)
       this.attr({
         text: arrText.join('')
       })
-      this.draw(i + 1)
+      this.draw({ curIndex: i + 1 })
     } else if (evt.key === KeyMap.Left) {
       if (i > 0) {
         this.cursorPosition = this.position[i - 1]
-        this.recoveryDrawCursor()
-        this.initDrawCursor()
+        this.recoveryCursor()
+        this.drawCursor()
       }
     } else if (evt.key === KeyMap.Right) {
       if (i < this.position.length - 1) {
         this.cursorPosition = this.position[i + 1]
-        this.recoveryDrawCursor()
-        this.initDrawCursor()
+        this.recoveryCursor()
+        this.drawCursor()
       }
     } else if (evt.key === KeyMap.Up || evt.key === KeyMap.Down) {
       const { lineNo, i, coordinate: { leftTop, rightTop } } = this.cursorPosition
@@ -381,8 +374,8 @@ export default class Text {
           }
         }
         this.cursorPosition = this.position[maxIndex]
-        this.recoveryDrawCursor()
-        this.initDrawCursor()
+        this.recoveryCursor()
+        this.drawCursor()
       }
     } else if (evt.ctrlKey && evt.key === KeyMap.Z) {
       this.historyManager.undo()
@@ -409,7 +402,7 @@ export default class Text {
     this.attr({
       text: arrText.join('')
     })
-    this.draw(i + data.length)
+    this.draw({ curIndex: i + data.length })
   }
 
   handlePaste(evt: ClipboardEvent) {

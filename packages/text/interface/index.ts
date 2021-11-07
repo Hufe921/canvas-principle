@@ -27,3 +27,9 @@ export interface IRange {
   startIndex: number;
   endIndex: number
 }
+
+export interface IDrawOptions {
+  curIndex?: number;
+  isSubmitHistory?: boolean;
+  isSetCursor?: boolean
+}
