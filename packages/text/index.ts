@@ -5,11 +5,13 @@ import { HistoryManager } from './core/HistoryManager'
 import { ITextProp, ITextAttr, IPosition, IRange } from './interface'
 export default class Text {
 
+  private readonly RANGE_COLOR = '#AECBFA'
+
   private canvas: HTMLCanvasElement
   private ctx: CanvasRenderingContext2D
   private textProp: ITextProp | null
   private position: IPosition[]
-  private range: IRange | null
+  private range: IRange
 
   private cursorPosition: IPosition | null
   private imgData: ImageData | null
@@ -39,7 +41,10 @@ export default class Text {
     this.timeout = null
     this.isCompositing = false
     this.isAllowDrag = false
-    this.range = null
+    this.range = {
+      startIndex: 0,
+      endIndex: 0
+    }
     this.lineCount = 0
 
     // 历史管理
@@ -170,8 +175,8 @@ export default class Text {
     }
   }
 
-  setCursor(evt: MouseEvent) {
-    if (!this.textProp) return
+  getCursorPosition(evt: MouseEvent): number {
+    if (!this.textProp) return -1
     const { arrText } = this.textProp
     const x = evt.offsetX
     const y = evt.offsetY
@@ -188,9 +193,8 @@ export default class Text {
             index = j - 1
           }
         }
-        this.cursorPosition = this.position[index]
         isTextArea = true
-        break
+        return index
       }
     }
     // 非命中区域
@@ -207,32 +211,22 @@ export default class Text {
         }
       }
       if (!isLastArea) {
-        this.cursorPosition = this.position[this.position.length - 1]
+        return this.position.length - 1
       }
     }
-    // 绘制光标-光标无法正确定位
-    setTimeout(() => {
-      this.recoveryDrawCursor()
-      this.initDrawCursor()
-    })
+    return -1
   }
 
-  initDrawRange() {
-    const range = this.range
-    if (!range) return
-    // 选区位置
-    const { coordinate: start } = this.position[range.startIndex]
-    const { coordinate: end } = this.position[range.endIndex]
-    const x = start.leftTop[0]
-    const y = start.leftTop[1]
-    const width = end.rightTop[0] - start.leftTop[0]
-    const height = end.rightBottom[1] - end.rightTop[1]
-    // 绘制
-    this.ctx.save()
-    this.ctx.globalAlpha = 0.6
-    this.ctx.fillStyle = '#AECBFA'
-    this.ctx.fillRect(x, y, width, height)
-    this.ctx.restore()
+  setCursor(evt: MouseEvent) {
+    const positionIndex = this.getCursorPosition(evt)
+    if (~positionIndex) {
+      this.cursorPosition = this.position[positionIndex]
+      // 绘制光标-光标无法正确定位
+      setTimeout(() => {
+        this.recoveryDrawCursor()
+        this.initDrawCursor()
+      })
+    }
   }
 
   initDrawCursor() {
@@ -279,8 +273,33 @@ export default class Text {
     }, 500)
   }
 
-  handleMousemove() {
+  strokeRange() {
+    const { startIndex, endIndex } = this.range
+    if (startIndex === endIndex) return
+    const { coordinate: startCoordinate, lineNo: startLineNo } = this.position[startIndex]
+    const { coordinate: endCoordinate, lineNo: endLineNo } = this.position[endIndex]
+    this.ctx.save()
+    this.ctx.globalAlpha = 0.6
+    this.ctx.fillStyle = this.RANGE_COLOR
+    if (startLineNo === endLineNo) {
+      const x = startCoordinate.leftTop[0]
+      const y = startCoordinate.leftTop[1]
+      const w = endCoordinate.rightTop[0] - x
+      const h = startCoordinate.leftBottom[1] - startCoordinate.leftTop[1]
+      this.ctx.fillRect(x, y, w, h)
+    }
+    this.ctx.restore()
+  }
+
+  handleMousemove(evt: MouseEvent) {
     if (!this.isAllowDrag) return
+    // 结束位置
+    const endIndex = this.getCursorPosition(evt)
+    this.range.endIndex = ~endIndex ? endIndex : 0
+    // 开始位置
+    this.range.startIndex = this.cursorPosition?.i || 0
+    // 绘制选区
+    this.strokeRange()
   }
 
   handleMousedown() {
