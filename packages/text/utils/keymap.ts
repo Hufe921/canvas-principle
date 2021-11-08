@@ -5,7 +5,9 @@ export enum KeyMap {
   Right = "ArrowRight",
   Up = "ArrowUp",
   Down = "ArrowDown",
+  A = "a",
   C = "c",
+  X = "x",
   Y = "y",
   Z = "z"
 }

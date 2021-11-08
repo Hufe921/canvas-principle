@@ -1,6 +1,7 @@
 import './index.css'
 import { ZERO } from './utils/dataset'
 import { KeyMap } from './utils/keymap'
+import { writeText } from './utils/utils'
 import { HistoryManager } from './core/HistoryManager'
 import { ITextProp, ITextAttr, IPosition, IRange, IDrawOptions } from './interface'
 export default class Text {
@@ -279,6 +280,11 @@ export default class Text {
     })
   }
 
+  clearRange() {
+    this.range.startIndex = 0
+    this.range.endIndex = 0
+  }
+
   handleMousemove(evt: MouseEvent) {
     if (!this.isAllowDrag) return
     // 结束位置
@@ -312,34 +318,44 @@ export default class Text {
     if (!this.cursorPosition || !this.textProp) return
     const { i } = this.cursorPosition
     const { arrText } = this.textProp
+    const { startIndex, endIndex } = this.range
+    const isCollspace = startIndex === endIndex
     if (evt.key === KeyMap.Backspace) {
       // 判断是否允许删除
       if (arrText[i] === ZERO && i === 0) {
         evt.preventDefault()
         return
       }
-      arrText.splice(i, 1)
+      if (!isCollspace) {
+        arrText.splice(startIndex + 1, endIndex - startIndex)
+      } else {
+        arrText.splice(i, 1)
+      }
       this.attr({
         text: arrText.join('')
       })
-      this.draw({ curIndex: i - 1 })
+      this.clearRange()
+      this.draw({ curIndex: isCollspace ? i - 1 : startIndex })
     } else if (evt.key === KeyMap.Enter) {
-      arrText.splice(i + 1, 0, ZERO)
+      if (isCollspace) {
+        arrText.splice(i + 1, 0, ZERO)
+      } else {
+        arrText.splice(startIndex + 1, endIndex - startIndex, ZERO)
+      }
       this.attr({
         text: arrText.join('')
       })
+      this.clearRange()
       this.draw({ curIndex: i + 1 })
     } else if (evt.key === KeyMap.Left) {
       if (i > 0) {
-        this.cursorPosition = this.position[i - 1]
-        this.recoveryCursor()
-        this.drawCursor()
+        this.clearRange()
+        this.draw({ curIndex: i - 1, isSubmitHistory: false })
       }
     } else if (evt.key === KeyMap.Right) {
       if (i < this.position.length - 1) {
-        this.cursorPosition = this.position[i + 1]
-        this.recoveryCursor()
-        this.drawCursor()
+        this.clearRange()
+        this.draw({ curIndex: i + 1, isSubmitHistory: false })
       }
     } else if (evt.key === KeyMap.Up || evt.key === KeyMap.Down) {
       const { lineNo, i, coordinate: { leftTop, rightTop } } = this.cursorPosition
@@ -374,9 +390,8 @@ export default class Text {
             maxIndex = position.i
           }
         }
-        this.cursorPosition = this.position[maxIndex]
-        this.recoveryCursor()
-        this.drawCursor()
+        this.clearRange()
+        this.draw({ curIndex: maxIndex, isSubmitHistory: false })
       }
     } else if (evt.ctrlKey && evt.key === KeyMap.Z) {
       this.historyManager.undo()
@@ -385,12 +400,20 @@ export default class Text {
       this.historyManager.redo()
       evt.preventDefault()
     } else if (evt.ctrlKey && evt.key === KeyMap.C) {
-      const { startIndex, endIndex } = this.range
-      if (startIndex !== endIndex) {
-        const text = this.position.slice(startIndex, endIndex).map(p => p.word).join('')
-        window.navigator.clipboard.writeText(text)
+      if (!isCollspace) {
+        writeText(this.position.slice(startIndex, endIndex).map(p => p.word).join(''))
       }
-      evt.preventDefault()
+    } else if (evt.ctrlKey && evt.key === KeyMap.X) {
+      if (!isCollspace) {
+        writeText(this.position.slice(startIndex, endIndex).map(p => p.word).join(''))
+        arrText.splice(startIndex + 1, endIndex - startIndex)
+        this.clearRange()
+        this.draw({ curIndex: startIndex })
+      }
+    } else if (evt.ctrlKey && evt.key === KeyMap.A) {
+      this.range.startIndex = 0
+      this.range.endIndex = this.position.length - 1
+      this.draw({ isSubmitHistory: false, isSetCursor: false })
     }
   }
 
