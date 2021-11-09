@@ -432,11 +432,18 @@ export default class Text {
     this.inputarea.value = ''
     const { i } = this.cursorPosition
     const { arrText } = this.textProp
-    arrText.splice(i + 1, 0, data).join('')
+    const { startIndex, endIndex } = this.range
+    const isCollspace = startIndex === endIndex
+    if (isCollspace) {
+      arrText.splice(i + 1, 0, data).join('')
+    } else {
+      arrText.splice(startIndex + 1, endIndex - startIndex, data)
+    }
     this.attr({
       text: arrText.join('')
     })
-    this.draw({ curIndex: i + data.length })
+    this.clearRange()
+    this.draw({ curIndex: (isCollspace ? i : startIndex) + data.length })
   }
 
   handlePaste(evt: ClipboardEvent) {
