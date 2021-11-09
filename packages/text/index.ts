@@ -306,7 +306,10 @@ export default class Text {
     this.mouseDownStartIndex = this.getCursorPosition(evt) || 0
   }
 
-  handleMouseleave() {
+  handleMouseleave(evt: MouseEvent) {
+    // 是否还在canvas内部
+    const { x, y, width, height } = this.canvas.getBoundingClientRect()
+    if (evt.x >= x && evt.x <= x + width && evt.y >= y && evt.y <= y + height) return
     this.isAllowDrag = false
   }
 
