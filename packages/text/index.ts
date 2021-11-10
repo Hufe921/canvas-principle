@@ -1,16 +1,16 @@
 import './index.css'
 import { ZERO } from './utils/dataset'
 import { KeyMap } from './utils/keymap'
-import { writeText } from './utils/utils'
+import { deepClone, writeText } from './utils/utils'
 import { HistoryManager } from './core/HistoryManager'
-import { ITextProp, ITextAttr, IPosition, IRange, IDrawOptions } from './interface'
+import { ITextAttr, IPosition, IRange, IDrawOptions, IText } from './interface'
 export default class Text {
 
   private readonly RANGE_COLOR = '#AECBFA'
 
   private canvas: HTMLCanvasElement
   private ctx: CanvasRenderingContext2D
-  private textProp: ITextProp | null
+  private textList: IText[]
   private position: IPosition[]
   private range: IRange
 
@@ -34,7 +34,7 @@ export default class Text {
     this.canvas = canvas
     this.ctx = ctx as CanvasRenderingContext2D
     this.ctx.scale(dpr, dpr)
-    this.textProp = null
+    this.textList = []
     this.position = []
     this.cursorPosition = null
     this.isCompositing = false
@@ -86,56 +86,60 @@ export default class Text {
     canvas.addEventListener('mousemove', this.handleMousemove.bind(this))
   }
 
-  attr(props: ITextAttr) {
-    const isZeroStart = new RegExp(`^${ZERO}`).test(props.text)
-    const text = (!isZeroStart ? ZERO : '') + props.text.replace(/\n/g, ZERO)
-    this.textProp = {
-      text,
-      font: props.font || '20px yahei',
-      textBaseline: props.textBaseline || 'hanging',
-      arrText: text.split('')
+  attr(attr: ITextAttr) {
+    const { textList } = attr
+    const isZeroStart = textList[0].value === ZERO
+    if (!isZeroStart) {
+      textList.unshift({
+        type: 'TEXT',
+        value: ZERO
+      })
     }
+    textList.forEach(text => {
+      if (text.value === '\n') {
+        text.value = ZERO
+      }
+    })
+    this.textList = textList
   }
 
-  draw(options: IDrawOptions) {
+  draw(options?: IDrawOptions) {
     let { curIndex, isSubmitHistory = true, isSetCursor = true } = options || {}
     // 清除光标
     this.recoveryCursor()
-    if (!this.textProp) return
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
     let x = 0
     let y = 0
     this.position = []
-    const { arrText, font, textBaseline } = this.textProp
     // 绘制文本
     this.ctx.save()
-    this.ctx.font = font
-    this.ctx.textBaseline = textBaseline
+    this.ctx.font = '20px yahei'
+    this.ctx.textBaseline = 'hanging'
     // 记录当前行
     let lineStr = ''
     let lineNo = 0
-    for (let i = 0; i < arrText.length; i++) {
+    for (let i = 0; i < this.textList.length; i++) {
       // 字符基本信息
-      const word = arrText[i];
-      const metrics = this.ctx.measureText(word)
+      const value = this.textList[i].value;
+      const metrics = this.ctx.measureText(value)
       const height = metrics.fontBoundingBoxDescent
       const width = metrics.width
       // 计算宽度是否超出画布
       const curLineWidth = this.ctx.measureText(lineStr).width
       const canvasWidth = this.canvas.getBoundingClientRect().width
-      if (curLineWidth + width > canvasWidth || (i !== 0 && word === ZERO)) {
+      if (curLineWidth + width > canvasWidth || (i !== 0 && value === ZERO)) {
         x = 0
         y += height
-        lineStr = word
+        lineStr = value
         lineNo += 1
       } else {
-        lineStr += word
+        lineStr += value
       }
-      const positionItem = {
-        i,
+      const positionItem: IPosition = {
+        index: i,
+        value,
         lineNo,
         isLastLetter: false,
-        word: arrText[i + 1],
         coordinate: {
           leftTop: [x, y],
           leftBottom: [x, y + height],
@@ -149,7 +153,7 @@ export default class Text {
         }
       }
       this.position.push(positionItem)
-      this.ctx.fillText(word, x, y)
+      this.ctx.fillText(value, x, y)
       // 选区绘制
       const { startIndex, endIndex } = this.range
       if (startIndex !== endIndex && startIndex < i && i <= endIndex) {
@@ -183,36 +187,32 @@ export default class Text {
     // 历史记录-用于undo、redo
     if (isSubmitHistory) {
       const self = this
-      const oldText = arrText.join('')
+      const oldTextList = deepClone(this.textList)
       this.historyManager.execute(function () {
-        self.attr({
-          text: oldText
-        })
+        self.textList = deepClone(oldTextList)
         self.draw({ curIndex, isSubmitHistory: false })
       })
     }
   }
 
   getCursorPosition(evt: MouseEvent): number {
-    if (!this.textProp) return -1
-    const { arrText } = this.textProp
     const x = evt.offsetX
     const y = evt.offsetY
     let isTextArea = false
     for (let j = 0; j < this.position.length; j++) {
-      const { i, coordinate: { leftTop, rightTop, leftBottom } } = this.position[j];
+      const { index, coordinate: { leftTop, rightTop, leftBottom } } = this.position[j];
       // 命中文本
       if (leftTop[0] <= x && rightTop[0] >= x && leftTop[1] <= y && leftBottom[1] >= y) {
-        let index = j
+        let curPostionIndex = j
         // 判断是否文字中间前后
-        if (arrText[i] !== ZERO) {
-          const wordWidth = rightTop[0] - leftTop[0]
-          if (x < leftTop[0] + wordWidth / 2) {
-            index = j - 1
+        if (this.textList[index].value !== ZERO) {
+          const valueWidth = rightTop[0] - leftTop[0]
+          if (x < leftTop[0] + valueWidth / 2) {
+            curPostionIndex = j - 1
           }
         }
         isTextArea = true
-        return index
+        return curPostionIndex
       }
     }
     // 非命中区域
@@ -222,9 +222,9 @@ export default class Text {
       // 判断所属行是否存在文本
       const firstLetterList = this.position.filter(p => p.isLastLetter)
       for (let j = 0; j < firstLetterList.length; j++) {
-        const { i, coordinate: { leftTop, leftBottom } } = firstLetterList[j]
+        const { index, coordinate: { leftTop, leftBottom } } = firstLetterList[j]
         if (y > leftTop[1] && y <= leftBottom[1]) {
-          curPostionIndex = i
+          curPostionIndex = index
           isLastArea = true
           break
         }
@@ -318,55 +318,52 @@ export default class Text {
   }
 
   handleKeydown(evt: KeyboardEvent) {
-    if (!this.cursorPosition || !this.textProp) return
-    const { i } = this.cursorPosition
-    const { arrText } = this.textProp
+    if (!this.cursorPosition) return
+    const { index } = this.cursorPosition
     const { startIndex, endIndex } = this.range
     const isCollspace = startIndex === endIndex
     if (evt.key === KeyMap.Backspace) {
       // 判断是否允许删除
-      if (arrText[i] === ZERO && i === 0) {
+      if (this.textList[index].value === ZERO && index === 0) {
         evt.preventDefault()
         return
       }
       if (!isCollspace) {
-        arrText.splice(startIndex + 1, endIndex - startIndex)
+        this.textList.splice(startIndex + 1, endIndex - startIndex)
       } else {
-        arrText.splice(i, 1)
+        this.textList.splice(index, 1)
       }
-      this.attr({
-        text: arrText.join('')
-      })
       this.clearRange()
-      this.draw({ curIndex: isCollspace ? i - 1 : startIndex })
+      this.draw({ curIndex: isCollspace ? index - 1 : startIndex })
     } else if (evt.key === KeyMap.Enter) {
-      if (isCollspace) {
-        arrText.splice(i + 1, 0, ZERO)
-      } else {
-        arrText.splice(startIndex + 1, endIndex - startIndex, ZERO)
+      const enterText: IText = {
+        type: 'TEXT',
+        value: ZERO
       }
-      this.attr({
-        text: arrText.join('')
-      })
+      if (isCollspace) {
+        this.textList.splice(index + 1, 0, enterText)
+      } else {
+        this.textList.splice(startIndex + 1, endIndex - startIndex, enterText)
+      }
       this.clearRange()
-      this.draw({ curIndex: i + 1 })
+      this.draw({ curIndex: index + 1 })
     } else if (evt.key === KeyMap.Left) {
-      if (i > 0) {
+      if (index > 0) {
         this.clearRange()
-        this.draw({ curIndex: i - 1, isSubmitHistory: false })
+        this.draw({ curIndex: index - 1, isSubmitHistory: false })
       }
     } else if (evt.key === KeyMap.Right) {
-      if (i < this.position.length - 1) {
+      if (index < this.position.length - 1) {
         this.clearRange()
-        this.draw({ curIndex: i + 1, isSubmitHistory: false })
+        this.draw({ curIndex: index + 1, isSubmitHistory: false })
       }
     } else if (evt.key === KeyMap.Up || evt.key === KeyMap.Down) {
-      const { lineNo, i, coordinate: { leftTop, rightTop } } = this.cursorPosition
+      const { lineNo, index, coordinate: { leftTop, rightTop } } = this.cursorPosition
       if ((evt.key === KeyMap.Up && lineNo !== 0) || (evt.key === KeyMap.Down && lineNo !== this.lineCount)) {
         // 下一个光标点所在行位置集合
         const probablePosition = evt.key === KeyMap.Up
-          ? this.position.slice(0, i).filter(p => p.lineNo === lineNo - 1)
-          : this.position.slice(i, this.position.length - 1).filter(p => p.lineNo === lineNo + 1)
+          ? this.position.slice(0, index).filter(p => p.lineNo === lineNo - 1)
+          : this.position.slice(index, this.position.length - 1).filter(p => p.lineNo === lineNo + 1)
         // 查找与当前位置文字点交叉最多的位置
         let maxIndex = 0
         let maxDistance = 0
@@ -376,7 +373,7 @@ export default class Text {
           if (position.coordinate.leftTop[0] >= leftTop[0] && position.coordinate.leftTop[0] <= rightTop[0]) {
             const curDistance = rightTop[0] - position.coordinate.leftTop[0]
             if (curDistance > maxDistance) {
-              maxIndex = position.i
+              maxIndex = position.index
               maxDistance = curDistance
             }
           }
@@ -384,13 +381,13 @@ export default class Text {
           else if (position.coordinate.leftTop[0] <= leftTop[0] && position.coordinate.rightTop[0] >= leftTop[0]) {
             const curDistance = position.coordinate.rightTop[0] - leftTop[0]
             if (curDistance > maxDistance) {
-              maxIndex = position.i
+              maxIndex = position.index
               maxDistance = curDistance
             }
           }
           // 匹配不到
           if (p === probablePosition.length - 1 && maxIndex === 0) {
-            maxIndex = position.i
+            maxIndex = position.index
           }
         }
         this.clearRange()
@@ -404,12 +401,12 @@ export default class Text {
       evt.preventDefault()
     } else if (evt.ctrlKey && evt.key === KeyMap.C) {
       if (!isCollspace) {
-        writeText(this.position.slice(startIndex, endIndex).map(p => p.word).join(''))
+        writeText(this.textList.slice(startIndex + 1, endIndex + 1).map(p => p.value).join(''))
       }
     } else if (evt.ctrlKey && evt.key === KeyMap.X) {
       if (!isCollspace) {
-        writeText(this.position.slice(startIndex, endIndex).map(p => p.word).join(''))
-        arrText.splice(startIndex + 1, endIndex - startIndex)
+        writeText(this.position.slice(startIndex + 1, endIndex + 1).map(p => p.value).join(''))
+        this.textList.splice(startIndex + 1, endIndex - startIndex)
         this.clearRange()
         this.draw({ curIndex: startIndex })
       }
@@ -421,29 +418,22 @@ export default class Text {
   }
 
   handleInput(data: string) {
-    if (
-      !data ||
-      !this.cursorPosition ||
-      !this.textProp ||
-      this.isCompositing
-    ) {
-      return
-    }
+    if (!data || !this.cursorPosition || this.isCompositing) return
     this.inputarea.value = ''
-    const { i } = this.cursorPosition
-    const { arrText } = this.textProp
+    const { index } = this.cursorPosition
     const { startIndex, endIndex } = this.range
     const isCollspace = startIndex === endIndex
+    const inputData: IText[] = data.split('').map(value => ({
+      value,
+      type: 'TEXT',
+    }))
     if (isCollspace) {
-      arrText.splice(i + 1, 0, data).join('')
+      this.textList.splice(index + 1, 0, ...inputData)
     } else {
-      arrText.splice(startIndex + 1, endIndex - startIndex, data)
+      this.textList.splice(startIndex + 1, endIndex - startIndex, ...inputData)
     }
-    this.attr({
-      text: arrText.join('')
-    })
     this.clearRange()
-    this.draw({ curIndex: (isCollspace ? i : startIndex) + data.length })
+    this.draw({ curIndex: (isCollspace ? index : startIndex) + inputData.length })
   }
 
   handlePaste(evt: ClipboardEvent) {

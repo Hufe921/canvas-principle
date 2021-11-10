@@ -15,3 +15,18 @@ export function writeText(text: string) {
   if (!text) return
   window.navigator.clipboard.writeText(text.replaceAll(ZERO, `\n`))
 }
+
+export function deepClone(obj: any) {
+  if (!obj || typeof obj !== 'object') {
+    return obj;
+  }
+  let newObj: any = {};
+  if (Array.isArray(obj)) {
+    newObj = obj.map(item => deepClone(item));
+  } else {
+    Object.keys(obj).forEach((key) => {
+      return newObj[key] = deepClone(obj[key]);
+    })
+  }
+  return newObj;
+}

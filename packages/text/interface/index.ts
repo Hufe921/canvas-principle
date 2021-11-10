@@ -1,19 +1,24 @@
-export interface ITextAttr {
-  text: string;
+export interface IText {
+  type: 'TEXT' | 'IMAGE';
+  value: string;
   font?: string;
-  textBaseline?: CanvasTextBaseline;
+  size?: number;
+  width?: number;
+  height?: number;
+  bold?: boolean;
+  color?: string;
+  italic?: boolean;
+  underline?: boolean;
+  strikeout?: boolean;
 }
 
-export interface ITextProp {
-  text: string;
-  font: string;
-  textBaseline: CanvasTextBaseline;
-  arrText: string[]
+export interface ITextAttr {
+  textList: IText[];
 }
 
 export interface IPosition {
-  i: number;
-  word: string,
+  index: number;
+  value: string,
   lineNo: number;
   isLastLetter: boolean,
   coordinate: {
@@ -31,6 +36,6 @@ export interface IRange {
 
 export interface IDrawOptions {
   curIndex?: number;
-  isSubmitHistory?: boolean;
   isSetCursor?: boolean
+  isSubmitHistory?: boolean;
 }
