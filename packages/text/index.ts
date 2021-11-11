@@ -55,6 +55,9 @@ export default class Text {
       if (innerDoms.includes(evt.target as any)) return
       this.recoveryCursor()
     })
+    document.addEventListener('mouseup', () => {
+      this.isAllowDrag = false
+    })
 
     // 事件监听转发
     const textarea = document.createElement('textarea')
@@ -82,7 +85,6 @@ export default class Text {
     canvas.addEventListener('mousedown', this.setCursor.bind(this))
     canvas.addEventListener('mousedown', this.handleMousedown.bind(this))
     canvas.addEventListener('mouseleave', this.handleMouseleave.bind(this))
-    canvas.addEventListener('mouseup', this.handleMouseup.bind(this))
     canvas.addEventListener('mousemove', this.handleMousemove.bind(this))
   }
 
@@ -297,6 +299,7 @@ export default class Text {
     }
     this.range.startIndex = start
     this.range.endIndex = end
+    if (start === end) return
     // 绘制选区
     this.strokeRange()
   }
@@ -310,10 +313,6 @@ export default class Text {
     // 是否还在canvas内部
     const { x, y, width, height } = this.canvas.getBoundingClientRect()
     if (evt.x >= x && evt.x <= x + width && evt.y >= y && evt.y <= y + height) return
-    this.isAllowDrag = false
-  }
-
-  handleMouseup() {
     this.isAllowDrag = false
   }
 
