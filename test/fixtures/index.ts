@@ -66,31 +66,39 @@ function startEventDemo(canvas: HTMLCanvasElement) {
 
 function startTextInputDemo(canvas: HTMLCanvasElement) {
   if (!canvas) return
-  const text = `庆历四年春，滕子京谪守巴陵郡。越明年，政通人和，百废具兴，乃重修岳阳楼，增其旧制，刻唐贤今人诗赋于其上，属予作文以记之。
-  予观夫巴陵胜状，在洞庭一湖。衔远山，吞长江，浩浩汤汤，横无际涯，朝晖夕阴，气象万千，此则岳阳楼之大观也，前人之述备矣。然则北通巫峡，南极潇湘，迁客骚人，多会于此，览物之情，得无异乎？
-  若夫淫雨霏霏，连月不开，阴风怒号，浊浪排空，日星隐曜，山岳潜形，商旅不行，樯倾楫摧，薄暮冥冥，虎啸猿啼。登斯楼也，则有去国怀乡，忧谗畏讥，满目萧然，感极而悲者矣。
-  至若春和景明，波澜不惊，上下天光，一碧万顷，沙鸥翔集，锦鳞游泳，岸芷汀兰，郁郁青青。而或长烟一空，皓月千里，浮光跃金，静影沉璧，渔歌互答，此乐何极！登斯楼也，则有心旷神怡，宠辱偕忘，把酒临风，其喜洋洋者矣。
-  嗟夫！予尝求古仁人之心，或异二者之为，何哉？不以物喜，不以己悲，居庙堂之高则忧其民，处江湖之远则忧其君。是进亦忧，退亦忧。然则何时而乐耶？其必曰“先天下之忧而忧，后天下之乐而乐”乎！噫！微斯人，吾谁与归？
-  时六年九月十五日。`
+  const text = `主诉：\n发热三天，咳嗽五天。\n现病史：\n发病前14天内有病历报告社区的旅行时或居住史；发病前14天内与新型冠状病毒感染的患者或无症状感染者有接触史；发病前14天内解除过来自病历报告社区的发热或有呼吸道症状的患者；聚集性发病，2周内在小范围如家庭、办公室、学校班级等场所，出现2例及以上发热或呼吸道症状的病例。\n既往史：\n有糖尿病10年，有高血压2年，有传染性疾病1年。\n体格检查：\nT：36.5℃，P：80bpm，R：20次/分，BP：120/80mmHg；\n辅助检查：\n2020年6月10日，普放：血细胞比容36.50%（偏低）40～50；单核细胞绝对值0.75*10^9/L（偏高）参考值：0.1～0.6；\n门诊诊断：\n1.高血压\n处置治疗：\n1.超声引导下甲状腺细针穿刺术；\n2.乙型肝炎表面抗体测定；\n3.膜式病变细胞采集术、后颈皮下肤层；\n4.氯化钠注射液 250ml/袋、1袋；\n5.七叶皂苷钠片（欧开）、30mg/片*24/盒、1片、口服、BID（每日两次）、1天`
+  const boldText = ['主诉：', '现病史：', '既往史：', '体格检查：', '辅助检查：', '门诊诊断：', '处置治疗：']
+  const boldIndex: number[] = boldText.map(b => {
+    const i = text.indexOf(b)
+    return ~i ? Array(b.length).fill(i).map((_, j) => i + j) : []
+  }).flat()
+
+  const colorText = ['传染性疾病']
+  const colorIndex: number[] = colorText.map(b => {
+    const i = text.indexOf(b)
+    return ~i ? Array(b.length).fill(i).map((_, j) => i + j) : []
+  }).flat()
+
   const textInstance = new Text(canvas)
   const textList: ITextAttr = {
     textList: text.split('').map((value, index) => {
-      if (index === 0 || index === 1 || index === 25 || index === 209) {
-        console.log('30px: ', value);
+      if (boldIndex.includes(index)) {
         return {
           value,
-          size: 30
+          size: 18,
+          bold: true
         }
       }
-      if (index === 333) {
-        console.log('red: ', value);
+      if (colorIndex.includes(index)) {
         return {
           value,
-          color: 'red'
+          color: 'red',
+          size: 16
         }
       }
       return {
         value,
+        size: 16
       }
     })
   }

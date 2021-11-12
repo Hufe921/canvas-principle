@@ -143,7 +143,10 @@ export default class Text {
       this.ctx.save()
       const curLine: ILine = line[line.length - 1]
       const text = this.textList[i]
-      this.ctx.font = `${text.size || defaultSize}px ${text.font || defaultFont}`
+      if (text.bold) {
+
+      }
+      this.ctx.font = `${text.bold ? 'bold ' : ''}${text.size || defaultSize}px ${text.font || defaultFont}`
       const metrics = this.ctx.measureText(text.value)
       const width = metrics.width
       const fontBoundingBoxAscent = metrics.fontBoundingBoxAscent
@@ -177,7 +180,10 @@ export default class Text {
         this.ctx.save()
         const text = curLine.textList[j];
         const metrics = text.metrics
-        this.ctx.font = `${text.size || defaultSize}px ${text.font || defaultFont}`
+        this.ctx.font = `${text.bold ? 'bold ' : ''}${text.size || defaultSize}px ${text.font || defaultFont}`
+        if (text.color) {
+          this.ctx.fillStyle = text.color
+        }
         const positionItem: ITextPosition = {
           index,
           value: text.value,
