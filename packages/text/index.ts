@@ -143,9 +143,6 @@ export default class Text {
       this.ctx.save()
       const curLine: ILine = line[line.length - 1]
       const text = this.textList[i]
-      if (text.bold) {
-
-      }
       this.ctx.font = `${text.bold ? 'bold ' : ''}${text.size || defaultSize}px ${text.font || defaultFont}`
       const metrics = this.ctx.measureText(text.value)
       const width = metrics.width

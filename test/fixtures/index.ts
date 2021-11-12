@@ -72,13 +72,11 @@ function startTextInputDemo(canvas: HTMLCanvasElement) {
     const i = text.indexOf(b)
     return ~i ? Array(b.length).fill(i).map((_, j) => i + j) : []
   }).flat()
-
   const colorText = ['传染性疾病']
   const colorIndex: number[] = colorText.map(b => {
     const i = text.indexOf(b)
     return ~i ? Array(b.length).fill(i).map((_, j) => i + j) : []
   }).flat()
-
   const textInstance = new Text(canvas)
   const textList: ITextAttr = {
     textList: text.split('').map((value, index) => {
