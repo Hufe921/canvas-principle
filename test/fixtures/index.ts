@@ -1,6 +1,6 @@
 import { Circle, EventNames, Rect, Stage } from "../../packages/event"
 import Text from "../../packages/text"
-import { ITextAttr } from "../../packages/text/interface"
+import { ITextAttr } from "../../packages/text/interface/text"
 
 function startEventDemo(canvas: HTMLCanvasElement) {
   if (!canvas) return
@@ -74,10 +74,25 @@ function startTextInputDemo(canvas: HTMLCanvasElement) {
   时六年九月十五日。`
   const textInstance = new Text(canvas)
   const textList: ITextAttr = {
-    textList: text.split('').map(value => ({
-      value,
-      type: 'TEXT',
-    }))
+    textList: text.split('').map((value, index) => {
+      if (index === 0 || index === 1 || index === 25 || index === 209) {
+        console.log('30px: ', value);
+        return {
+          value,
+          size: 30
+        }
+      }
+      if (index === 333) {
+        console.log('red: ', value);
+        return {
+          value,
+          color: 'red'
+        }
+      }
+      return {
+        value,
+      }
+    })
   }
   textInstance.attr(textList)
   textInstance.draw()

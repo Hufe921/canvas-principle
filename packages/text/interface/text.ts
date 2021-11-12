@@ -1,5 +1,5 @@
 export interface IText {
-  type: 'TEXT' | 'IMAGE';
+  type?: 'TEXT' | 'IMAGE';
   value: string;
   font?: string;
   size?: number;
@@ -12,14 +12,22 @@ export interface IText {
   strikeout?: boolean;
 }
 
+export interface ITextOption {
+  defaultType?: string;
+  defaultFont?: string;
+  defaultSize?: number;
+}
+
 export interface ITextAttr {
   textList: IText[];
 }
 
-export interface IPosition {
+export interface ITextPosition {
   index: number;
   value: string,
   lineNo: number;
+  lineHeight: number;
+  metrics: TextMetrics;
   isLastLetter: boolean,
   coordinate: {
     leftTop: number[];
@@ -27,15 +35,4 @@ export interface IPosition {
     rightTop: number[];
     rightBottom: number[];
   }
-}
-
-export interface IRange {
-  startIndex: number;
-  endIndex: number
-}
-
-export interface IDrawOptions {
-  curIndex?: number;
-  isSetCursor?: boolean
-  isSubmitHistory?: boolean;
 }

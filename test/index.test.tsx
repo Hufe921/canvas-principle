@@ -18,7 +18,7 @@ export default function Index() {
     setType(key)
     const canvas = document.createElement('canvas')
     canvas.style.width = '500px'
-    canvas.style.height = '500px'
+    canvas.style.height = '700px'
     canvas.id = key
     repl.current?.append(canvas)
     switch (key) {

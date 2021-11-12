@@ -3,18 +3,30 @@ import { ZERO } from './utils/dataset'
 import { KeyMap } from './utils/keymap'
 import { deepClone, writeText } from './utils/utils'
 import { HistoryManager } from './core/HistoryManager'
-import { ITextAttr, IPosition, IRange, IDrawOptions, IText } from './interface'
+import { IRange } from './interface/range'
+import { ILine } from './interface/line'
+import { IDrawOption } from './interface/draw'
+import { IText, ITextOption, ITextAttr, ITextPosition } from './interface/text'
+
 export default class Text {
 
   private readonly RANGE_COLOR = '#AECBFA'
+  private readonly RANGE_ALPHA = 0.6
+  private readonly defaultOptions: Required<ITextOption> = {
+    defaultType: 'TEXT',
+    defaultFont: 'yahei',
+    defaultSize: 20,
+  }
 
   private canvas: HTMLCanvasElement
   private ctx: CanvasRenderingContext2D
+
+  private options: Required<ITextOption>
   private textList: IText[]
-  private position: IPosition[]
+  private position: ITextPosition[]
   private range: IRange
 
-  private cursorPosition: IPosition | null
+  private cursorPosition: ITextPosition | null
   private cursorDom: HTMLDivElement
   private textareaDom: HTMLTextAreaElement
   private inputarea: HTMLTextAreaElement
@@ -25,7 +37,11 @@ export default class Text {
 
   private historyManager: HistoryManager
 
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement, options: ITextOption = {}) {
+    this.options = {
+      ...this.defaultOptions,
+      ...options
+    };
     const ctx = canvas.getContext('2d')
     const dpr = window.devicePixelRatio;
     canvas.width = parseInt(canvas.style.width) * dpr;
@@ -93,7 +109,6 @@ export default class Text {
     const isZeroStart = textList[0].value === ZERO
     if (!isZeroStart) {
       textList.unshift({
-        type: 'TEXT',
         value: ZERO
       })
     }
@@ -105,77 +120,105 @@ export default class Text {
     this.textList = textList
   }
 
-  draw(options?: IDrawOptions) {
+  draw(options?: IDrawOption) {
     let { curIndex, isSubmitHistory = true, isSetCursor = true } = options || {}
     // 清除光标
     this.recoveryCursor()
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+    this.position = []
+    // 基础信息
+    const { defaultSize, defaultFont } = this.options
+    const canvasWidth = this.canvas.getBoundingClientRect().width
+    // 计算行信息
+    const line: ILine[] = []
+    if (this.textList.length) {
+      line.push({
+        width: 0,
+        height: 0,
+        ascent: 0,
+        textList: []
+      })
+    }
+    for (let i = 0; i < this.textList.length; i++) {
+      this.ctx.save()
+      const curLine: ILine = line[line.length - 1]
+      const text = this.textList[i]
+      this.ctx.font = `${text.size || defaultSize}px ${text.font || defaultFont}`
+      const metrics = this.ctx.measureText(text.value)
+      const width = metrics.width
+      const fontBoundingBoxAscent = metrics.fontBoundingBoxAscent
+      const fontBoundingBoxDescent = metrics.fontBoundingBoxDescent
+      const height = fontBoundingBoxAscent + fontBoundingBoxDescent
+      const lineText = { ...text, metrics }
+      if (curLine.width + width > canvasWidth || (i !== 0 && text.value === ZERO)) {
+        line.push({
+          width,
+          height: 0,
+          textList: [lineText],
+          ascent: fontBoundingBoxAscent
+        })
+      } else {
+        curLine.width += width
+        if (curLine.height < height) {
+          curLine.height = height
+          curLine.ascent = fontBoundingBoxAscent
+        }
+        curLine.textList.push(lineText)
+      }
+      this.ctx.restore()
+    }
+    // 渲染文本
     let x = 0
     let y = 0
-    this.position = []
-    // 绘制文本
-    this.ctx.save()
-    this.ctx.font = '20px yahei'
-    this.ctx.textBaseline = 'hanging'
-    // 记录当前行
-    let lineStr = ''
-    let lineNo = 0
-    for (let i = 0; i < this.textList.length; i++) {
-      // 字符基本信息
-      const value = this.textList[i].value;
-      const metrics = this.ctx.measureText(value)
-      const height = metrics.fontBoundingBoxDescent
-      const width = metrics.width
-      // 计算宽度是否超出画布
-      const curLineWidth = this.ctx.measureText(lineStr).width
-      const canvasWidth = this.canvas.getBoundingClientRect().width
-      if (curLineWidth + width > canvasWidth || (i !== 0 && value === ZERO)) {
-        x = 0
-        y += height
-        lineStr = value
-        lineNo += 1
-      } else {
-        lineStr += value
-      }
-      const positionItem: IPosition = {
-        index: i,
-        value,
-        lineNo,
-        isLastLetter: false,
-        coordinate: {
-          leftTop: [x, y],
-          leftBottom: [x, y + height],
-          rightTop: [x + width, y],
-          rightBottom: [x + width, y + height]
-        }
-      }
-      if (x === 0 && i !== 0) {
-        if (y !== this.position[i - 1].coordinate.leftTop[1]) {
-          this.position[i - 1].isLastLetter = true
-        }
-      }
-      this.position.push(positionItem)
-      this.ctx.fillText(value, x, y)
-      // 选区绘制
-      const { startIndex, endIndex } = this.range
-      if (startIndex !== endIndex && startIndex < i && i <= endIndex) {
+    let index = 0
+    for (let i = 0; i < line.length; i++) {
+      const curLine = line[i];
+      for (let j = 0; j < curLine.textList.length; j++) {
         this.ctx.save()
-        this.ctx.globalAlpha = 0.6
-        this.ctx.fillStyle = this.RANGE_COLOR
-        this.ctx.fillRect(x, y, width, height)
+        const text = curLine.textList[j];
+        const metrics = text.metrics
+        this.ctx.font = `${text.size || defaultSize}px ${text.font || defaultFont}`
+        const positionItem: ITextPosition = {
+          index,
+          value: text.value,
+          lineNo: i,
+          metrics,
+          lineHeight: curLine.height,
+          isLastLetter: j === curLine.textList.length - 1,
+          coordinate: {
+            leftTop: [x, y],
+            leftBottom: [x, y + curLine.height],
+            rightTop: [x + metrics.width, y],
+            rightBottom: [x + metrics.width, y + curLine.height]
+          }
+        }
+        this.position.push(positionItem)
+        this.ctx.fillText(text.value, x, y + curLine.ascent)
+        // 选区绘制
+        const { startIndex, endIndex } = this.range
+        if (startIndex !== endIndex && startIndex < index && index <= endIndex) {
+          this.ctx.save()
+          this.ctx.globalAlpha = this.RANGE_ALPHA
+          this.ctx.fillStyle = this.RANGE_COLOR
+          this.ctx.fillRect(x, y, metrics.width, curLine.height)
+          this.ctx.restore()
+        }
+        index++
+        x += metrics.width
         this.ctx.restore()
       }
-      x += width
+      x = 0
+      y += curLine.height
     }
+    // 光标重绘
     if (curIndex === undefined) {
       curIndex = this.position.length - 1
     }
-    // 光标重绘
     if (isSetCursor) {
       this.cursorPosition = this.position[curIndex!] || null
       this.drawCursor()
     }
-    // 最后一个字距离顶部高度
+    // canvas高度自适应计算
     const lastPosition = this.position[this.position.length - 1]
     const { coordinate: { leftBottom, leftTop } } = lastPosition
     if (leftBottom[1] > this.canvas.height) {
@@ -184,9 +227,8 @@ export default class Text {
       this.canvas.style.height = `${height}px`
       this.draw({ curIndex, isSubmitHistory: false })
     }
-    this.lineCount = lineNo
-    this.ctx.restore()
-    // 历史记录-用于undo、redo
+    this.lineCount = line.length
+    // 历史记录用于undo、redo
     if (isSubmitHistory) {
       const self = this
       const oldTextList = deepClone(this.textList)
@@ -253,18 +295,20 @@ export default class Text {
   drawCursor() {
     if (!this.cursorPosition) return
     // 设置光标代理
-    const { coordinate: { rightTop: [x, y] } } = this.cursorPosition
+    const { lineHeight, metrics, coordinate: { rightTop } } = this.cursorPosition
+    const height = metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent
     this.inputarea.focus()
     this.inputarea.setSelectionRange(0, 0)
     const { left, top } = this.canvas.getBoundingClientRect()
-    const curosrleft = `${x + left}px`
-    const cursorTop = `${y + top}px`
+    const lineBottom = rightTop[1] + top + lineHeight
+    const curosrleft = `${rightTop[0] + left}px`
     this.inputarea.style.left = curosrleft
-    this.inputarea.style.top = cursorTop
+    this.inputarea.style.top = `${lineBottom - 12}px`
     // 模拟光标显示
     this.cursorDom.style.left = curosrleft
-    this.cursorDom.style.top = cursorTop
+    this.cursorDom.style.top = `${lineBottom - height}px`
     this.cursorDom.style.display = 'block'
+    this.cursorDom.style.height = `${height}px`
     setTimeout(() => {
       this.cursorDom.classList.add('cursor--animation')
     }, 200)
@@ -336,7 +380,6 @@ export default class Text {
       this.draw({ curIndex: isCollspace ? index - 1 : startIndex })
     } else if (evt.key === KeyMap.Enter) {
       const enterText: IText = {
-        type: 'TEXT',
         value: ZERO
       }
       if (isCollspace) {
@@ -423,8 +466,7 @@ export default class Text {
     const { startIndex, endIndex } = this.range
     const isCollspace = startIndex === endIndex
     const inputData: IText[] = data.split('').map(value => ({
-      value,
-      type: 'TEXT',
+      value
     }))
     if (isCollspace) {
       this.textList.splice(index + 1, 0, ...inputData)
